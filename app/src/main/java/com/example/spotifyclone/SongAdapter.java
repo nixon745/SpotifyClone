@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder> {
 
-    private ArrayList<Song> songList;
+    private final ArrayList<Song> songList;
 
     public SongAdapter(ArrayList<Song> songList) {
         this.songList = songList;

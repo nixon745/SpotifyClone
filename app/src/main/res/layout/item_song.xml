@@ -10,13 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="140dp"
         android:scaleType="centerCrop"
-        android:background="@drawable/album_placeholder" />
+        android:background="@android:color/darker_gray" />
 
     <TextView
         android:id="@+id/songTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/white"
+        android:textColor="@android:color/white"
         android:textSize="14sp"
         android:textStyle="bold"
         android:ellipsize="end"
