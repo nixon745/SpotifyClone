@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:layoutDirection="rtl">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="הרשמה"
+            android:textColor="@color/white"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="30dp" />
+
+
+        <EditText
+            android:id="@+id/registerEmail"
+            android:hint="אימייל"
+            android:background="@drawable/edit_text_bg"
+            android:textColor="@color/white"
+            android:textColorHint="@color/gray"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
+
+        <EditText
+            android:id="@+id/registerUsername"
+            android:hint="שם משתמש"
+            android:background="@drawable/edit_text_bg"
+            android:textColor="@color/white"
+            android:textColorHint="@color/gray"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
+
+        <EditText
+            android:id="@+id/registerPassword"
+            android:hint="סיסמה"
+            android:inputType="textPassword"
+            android:background="@drawable/edit_text_bg"
+            android:textColor="@color/white"
+            android:textColorHint="@color/gray"
+            android:padding="12dp"
+            android:layout_marginBottom="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
+
+        <Button
+            android:id="@+id/registerBtn"
+            android:text="הירשם"
+            android:textColor="@color/black"
+            android:backgroundTint="@color/spotify_green"
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
+
+    </LinearLayout>
+</ScrollView>
