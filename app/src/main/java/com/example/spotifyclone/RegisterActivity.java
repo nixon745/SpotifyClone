@@ -10,6 +10,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -21,6 +23,7 @@ public class RegisterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
         mAuth = FirebaseAuth.getInstance();
 
         email = findViewById(R.id.registerEmail);
@@ -55,18 +58,48 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "הסיסמה חייבת להכיל לפחות 6 תווים", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // הצגת אינדיקטור טעינה
+        registerBtn.setEnabled(false);
+        registerBtn.setText("נרשם...");
+
+        // Firebase registration
         mAuth.createUserWithEmailAndPassword(emailText, passwordText)
                 .addOnSuccessListener(authResult -> {
-                    Toast.makeText(this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(this, HomeActivity.class));
-                    finish();
+                    FirebaseUser user = authResult.getUser();
+                    if (user != null) {
+                        // שמירת שם המשתמש בפרופיל Firebase
+                        UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                .setDisplayName(usernameText)
+                                .build();
+
+                        user.updateProfile(profileUpdates)
+                                .addOnCompleteListener(task -> {
+                                    if (task.isSuccessful()) {
+                                        Toast.makeText(this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
+                                        startActivity(new Intent(this, HomeActivity.class));
+                                        finish();
+                                    } else {
+                                        Toast.makeText(this, "שגיאה בשמירת שם משתמש", Toast.LENGTH_SHORT).show();
+                                        // עדיין מעביר למסך הבית
+                                        startActivity(new Intent(this, HomeActivity.class));
+                                        finish();
+                                    }
+                                });
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "שגיאה: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
-        Toast.makeText(this, "נרשמת בהצלחה!", Toast.LENGTH_SHORT).show();
-        finish(); // חוזר למסך Login
-    }
+                    registerBtn.setEnabled(true);
+                    registerBtn.setText("הירשם");
 
+                    String errorMessage = e.getMessage();
+                    if (errorMessage != null && errorMessage.contains("already in use")) {
+                        Toast.makeText(this, "האימייל כבר קיים במערכת", Toast.LENGTH_LONG).show();
+                    } else if (errorMessage != null && errorMessage.contains("network")) {
+                        Toast.makeText(this, "בעיית רשת, בדוק את החיבור לאינטרנט", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "שגיאה: " + errorMessage, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
 }

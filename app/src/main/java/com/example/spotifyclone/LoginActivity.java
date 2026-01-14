@@ -17,20 +17,21 @@ public class LoginActivity extends AppCompatActivity {
     EditText email, password;
     Button loginBtn;
     TextView goRegister;
-
     private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         mAuth = FirebaseAuth.getInstance();
 
-        // בדיקה אם המשתמש כבר מחובר
+        // אם המשתמש כבר מחובר → הולך ל-Home
         if (mAuth.getCurrentUser() != null) {
             goToHome();
             return;
         }
+
         email = findViewById(R.id.loginEmail);
         password = findViewById(R.id.loginPassword);
         loginBtn = findViewById(R.id.loginBtn);
@@ -52,22 +53,42 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        if (!Patterns.EMAIL_ADDRESS.matcher(emailText).matches()) {
+            Toast.makeText(this, "אימייל לא תקין", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (passwordText.length() < 6) {
             Toast.makeText(this, "הסיסמה חייבת להכיל לפחות 6 תווים", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // הצגת אינדיקטור טעינה
+        loginBtn.setEnabled(false);
+        loginBtn.setText("מתחבר...");
+
         mAuth.signInWithEmailAndPassword(emailText, passwordText)
                 .addOnSuccessListener(authResult -> {
                     Toast.makeText(this, "התחברת בהצלחה!", Toast.LENGTH_SHORT).show();
                     goToHome();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "שגיאה: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
+                    loginBtn.setEnabled(true);
+                    loginBtn.setText("המשך");
+
+                    String errorMessage = e.getMessage();
+                    if (errorMessage != null && errorMessage.contains("no user record")) {
+                        Toast.makeText(this, "המשתמש לא קיים במערכת", Toast.LENGTH_LONG).show();
+                    } else if (errorMessage != null && errorMessage.contains("password is invalid")) {
+                        Toast.makeText(this, "סיסמה שגויה", Toast.LENGTH_LONG).show();
+                    } else if (errorMessage != null && errorMessage.contains("network")) {
+                        Toast.makeText(this, "בעיית רשת, בדוק את החיבור לאינטרנט", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "שגיאה: " + errorMessage, Toast.LENGTH_LONG).show();
+                    }
                 });
-        // כרגע רק סימולציה
-       // Toast.makeText(this, "התחברת בהצלחה!", Toast.LENGTH_SHORT).show();
     }
+
     private void goToHome() {
         startActivity(new Intent(this, HomeActivity.class));
         finish();
