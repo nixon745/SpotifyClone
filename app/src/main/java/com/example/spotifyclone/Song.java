@@ -1,7 +1,6 @@
 package com.example.spotifyclone;
 
 public class Song {
-
     private String title;
     private String imageUrl;
 
@@ -14,7 +13,15 @@ public class Song {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }
