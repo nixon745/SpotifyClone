@@ -1,5 +1,7 @@
 package com.example.spotifyclone;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,10 +17,12 @@ import java.util.ArrayList;
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder> {
 
-    ArrayList<Song> songs;
+    private ArrayList<Song> songs;
+    private Context context;
 
-    public SongAdapter(ArrayList<Song> songs) {
+    public SongAdapter(ArrayList<Song> songs, Context context) {
         this.songs = songs;
+        this.context = context;
     }
 
     @NonNull
@@ -34,10 +38,24 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         Song song = songs.get(position);
         holder.songTitle.setText(song.getTitle());
 
+        // טעינת התמונה עם Glide
         Glide.with(holder.itemView.getContext())
                 .load(song.getImageUrl())
-                .centerCrop()
+                .placeholder(R.drawable.ic_music_note)
+                .error(R.drawable.ic_music_note)
                 .into(holder.songImage);
+
+        // לחיצה על האלבום - פתיחת נגן המוזיקה
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(context, PlayerActivity.class);
+                intent.putExtra("album_name", song.getTitle());
+                intent.putExtra("album_image", song.getImageUrl());
+                intent.putExtra("song_url", song.getSongUrl());
+                context.startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -45,8 +63,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         return songs.size();
     }
 
-    static class SongViewHolder extends RecyclerView.ViewHolder {
-
+    public static class SongViewHolder extends RecyclerView.ViewHolder {
         ImageView songImage;
         TextView songTitle;
 

@@ -26,8 +26,7 @@ public class LoginActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
-
-        // אם המשתמש כבר מחובר → הולך ל-Home
+        // אם המשתמש כבר מחובר
         if (mAuth.getCurrentUser() != null) {
             goToHome();
             return;
@@ -39,7 +38,6 @@ public class LoginActivity extends AppCompatActivity {
         goRegister = findViewById(R.id.goRegister);
 
         loginBtn.setOnClickListener(v -> checkLogin());
-
         goRegister.setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class))
         );
@@ -64,7 +62,6 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // הצגת אינדיקטור טעינה
         loginBtn.setEnabled(false);
         loginBtn.setText("מתחבר...");
 
@@ -76,17 +73,7 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     loginBtn.setEnabled(true);
                     loginBtn.setText("המשך");
-
-                    String errorMessage = e.getMessage();
-                    if (errorMessage != null && errorMessage.contains("no user record")) {
-                        Toast.makeText(this, "המשתמש לא קיים במערכת", Toast.LENGTH_LONG).show();
-                    } else if (errorMessage != null && errorMessage.contains("password is invalid")) {
-                        Toast.makeText(this, "סיסמה שגויה", Toast.LENGTH_LONG).show();
-                    } else if (errorMessage != null && errorMessage.contains("network")) {
-                        Toast.makeText(this, "בעיית רשת, בדוק את החיבור לאינטרנט", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "שגיאה: " + errorMessage, Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(this, "שגיאה: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 

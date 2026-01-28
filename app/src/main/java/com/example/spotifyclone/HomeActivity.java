@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -35,7 +35,6 @@ public class HomeActivity extends AppCompatActivity {
         // בדיקה אם המשתמש מחובר
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            // אם לא מחובר, חזרה ללוגין
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
@@ -79,47 +78,44 @@ public class HomeActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+                new GridLayoutManager(this, 2)
         );
 
         songList = new ArrayList<>();
 
-        songList.add(new Song(
-                "The College Dropout",
-                "https://upload.wikimedia.org/wikipedia/en/a/a3/Kanyewest_collegedropout.jpg"
-        ));
+        // הוספת האלבומים - כרגע ללא URL שמע (תצטרך להוסיף קישורים לקבצי MP3 שלך)
+        // דוגמה ל-URL חינמי לבדיקה:
+        String testSongUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
-        songList.add(new Song(
-                "Late Registration",
-                "https://upload.wikimedia.org/wikipedia/en/f/f4/Late_registration_cd_cover.jpg"
-        ));
+        songList.add(new Song("The College Dropout",
+                "https://upload.wikimedia.org/wikipedia/en/a/a3/Kanyewest_collegedropout.jpg",
+                testSongUrl)); // השתמש ב-URL של קובץ MP3 אמיתי
 
-        songList.add(new Song(
-                "Graduation",
-                "https://upload.wikimedia.org/wikipedia/en/7/70/Graduation_%28album%29.jpg"
-        ));
+        songList.add(new Song("Late Registration",
+                "https://upload.wikimedia.org/wikipedia/en/f/f4/Late_registration_cd_cover.jpg",
+                testSongUrl));
 
-        songList.add(new Song(
-                "808s & Heartbreak",
-                "https://upload.wikimedia.org/wikipedia/en/f/f1/808s_%26_Heartbreak.png"
-        ));
+        songList.add(new Song("Graduation",
+                "https://upload.wikimedia.org/wikipedia/en/7/70/Graduation_%28album%29.jpg",
+                testSongUrl));
 
-        songList.add(new Song(
-                "My Beautiful Dark Twisted Fantasy",
-                "https://upload.wikimedia.org/wikipedia/en/f/f0/My_Beautiful_Dark_Twisted_Fantasy.jpg"
-        ));
+        songList.add(new Song("808s & Heartbreak",
+                "https://upload.wikimedia.org/wikipedia/en/f/f1/808s_%26_Heartbreak.png",
+                testSongUrl));
 
-        songList.add(new Song(
-                "Yeezus",
-                "https://upload.wikimedia.org/wikipedia/en/4/4b/Yeezus_album_cover.png"
-        ));
+        songList.add(new Song("My Beautiful Dark Twisted Fantasy",
+                "https://upload.wikimedia.org/wikipedia/en/f/f0/My_Beautiful_Dark_Twisted_Fantasy.jpg",
+                testSongUrl));
 
-        songList.add(new Song(
-                "The Life of Pablo",
-                "https://upload.wikimedia.org/wikipedia/en/4/4d/The_life_of_pablo_alternate.jpg"
-        ));
+        songList.add(new Song("Yeezus",
+                "https://upload.wikimedia.org/wikipedia/en/4/4b/Yeezus_album_cover.png",
+                testSongUrl));
 
-        songAdapter = new SongAdapter(songList);
+        songList.add(new Song("The Life of Pablo",
+                "https://upload.wikimedia.org/wikipedia/en/4/4d/The_life_of_pablo_alternate.jpg",
+                testSongUrl));
+
+        songAdapter = new SongAdapter(songList, this);
         recyclerView.setAdapter(songAdapter);
     }
 
