@@ -26,6 +26,7 @@ public class LoginActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
+
         // אם המשתמש כבר מחובר → הולך ל-Home
         if (mAuth.getCurrentUser() != null) {
             goToHome();
