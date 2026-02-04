@@ -13,7 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SpotifyClone">
 
-        <!-- Activity הראשי שלך -->
         <activity android:name=".LoginActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,11 +20,11 @@
             </intent-filter>
         </activity>
 
-        <!-- שאר ה-Activities -->
         <activity android:name=".RegisterActivity" />
         <activity android:name=".HomeActivity" />
 
-        <!-- הוסף את זה! -->
+        <activity android:name=".GenreActivity" />
+
         <activity
             android:name=".PlayerActivity"
             android:screenOrientation="portrait"
