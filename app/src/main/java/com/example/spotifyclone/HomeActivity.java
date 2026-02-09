@@ -38,117 +38,129 @@ public class HomeActivity extends AppCompatActivity {
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
+            goToLogin();
             return;
         }
 
         welcomeText = findViewById(R.id.welcomeText);
+        recyclerView = findViewById(R.id.recyclerView);
+
+        // הגדרת תפריט הניווט (כולל Logout)
         setupNavigation();
 
-        // הגדרת ה-RecyclerView
-        recyclerView = findViewById(R.id.recyclerView);
+        // הגדרת ה-RecyclerView בגריד של 2 טורים לנצלו שטח המסך
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-
         songList = new ArrayList<>();
-
-        // התיקון: הסדר הוא (Context, List) לפי ה-SongAdapter שלך
         songAdapter = new SongAdapter(this, songList);
         recyclerView.setAdapter(songAdapter);
 
-        String displayName = currentUser.getDisplayName();
-        welcomeText.setText("שלום, " + (displayName != null ? displayName : "אורח") + "!");
+        welcomeText.setText("שלום, " + (currentUser.getDisplayName() != null ? currentUser.getDisplayName() : "אורח") + "!");
 
-        // --- חשוב: להפעיל פעם אחת כדי למלא את ה-Database ואז להחזיר ל-Comment ---
+        // --- חשוב מאוד: שחרר את ה-Comment לשורה למטה רק פעם אחת כדי למלא את המאגר בשירים ---
         // uploadSampleSongs();
 
-        checkUserPreferencesAndLoadSongs(currentUser.getUid());
-    }
-
-    private void checkUserPreferencesAndLoadSongs(String uid) {
-        db.collection("users").document(uid).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        List<String> myGenres = (List<String>) documentSnapshot.get("favoriteGenres");
-
-                        if (myGenres == null || myGenres.isEmpty()) {
-                            // אם אין ז'אנרים - עוברים לבחירה
-                            startActivity(new Intent(HomeActivity.this, GenreActivity.class));
-                            finish();
-                        } else {
-                            // אם יש - טוענים שירים
-                            fetchSongsByGenre(myGenres);
-                        }
-                    } else {
-                        startActivity(new Intent(HomeActivity.this, GenreActivity.class));
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "שגיאה בטעינת נתונים", Toast.LENGTH_SHORT).show());
-    }
-
-    private void fetchSongsByGenre(List<String> genres) {
-        if (genres == null || genres.isEmpty()) {
-            Log.d("HomeActivity", "User has no genres selected");
-            return;
-        }
-
-        Log.d("HomeActivity", "Fetching songs for genres: " + genres.toString());
-
-        db.collection("Songs")
-                .whereIn("genre", genres) // וודא שהשדה ב-Firestore נקרא genre בכתב קטן
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    songList.clear();
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Log.d("HomeActivity", "No songs found in Firestore for these genres");
-                        Toast.makeText(this, "לא נמצאו שירים בז'אנרים שבחרת", Toast.LENGTH_SHORT).show();
-                    } else {
-                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                            Song song = document.toObject(Song.class);
-                            songList.add(song);
-                        }
-                        songAdapter.notifyDataSetChanged();
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("Firestore", "Error fetching songs", e));
-    }
-
-    private void uploadSampleSongs() {
-        List<Song> samples = new ArrayList<>();
-
-        // שים לב: הז'אנרים חייבים להיות זהים לבחירות ב-GenreActivity
-        samples.add(new Song("Starboy", "https://upload.wikimedia.org/wikipedia/en/3/39/The_Weeknd_-_Starboy.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", "Pop"));
-        samples.add(new Song("Bohemian Rhapsody", "https://upload.wikimedia.org/wikipedia/en/e/ea/Queen_Bohemian_Rhapsody.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", "Rock"));
-        samples.add(new Song("Sicko Mode", "https://upload.wikimedia.org/wikipedia/en/0/0b/Astroworld_by_Travis_Scott.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "Hip Hop"));
-        samples.add(new Song("סהרה", "https://m.media-amazon.com/images/I/51p6GfF9WPL._UX250_FMjpg_QL85_.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", "Mizrahit"));
-
-        for (Song s : samples) {
-            db.collection("Songs").add(s);
-        }
-        Toast.makeText(this, "המאגר עודכן!", Toast.LENGTH_SHORT).show();
+        loadUserGenresAndSongs(currentUser.getUid());
     }
 
     private void setupNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+
             if (itemId == R.id.nav_home) return true;
-            if (itemId == R.id.nav_search) {
-                Toast.makeText(this, "חיפוש - בקרוב", Toast.LENGTH_SHORT).show();
-                return true;
-            }
-            if (itemId == R.id.nav_library) {
-                Toast.makeText(this, "ספריה - בקרוב", Toast.LENGTH_SHORT).show();
-                return true;
-            }
+
+            // אפשרות ההתנתקות
             if (itemId == R.id.nav_logout) {
                 mAuth.signOut();
-                startActivity(new Intent(this, LoginActivity.class));
-                finish();
+                Toast.makeText(this, "התנתקת בהצלחה", Toast.LENGTH_SHORT).show();
+                goToLogin();
+                return true;
+            }
+
+            if (itemId == R.id.nav_search || itemId == R.id.nav_library) {
+                Toast.makeText(this, "בקרוב...", Toast.LENGTH_SHORT).show();
                 return true;
             }
             return false;
         });
+    }
+
+    private void goToLogin() {
+        startActivity(new Intent(this, LoginActivity.class));
+        finish();
+    }
+
+    private void loadUserGenresAndSongs(String uid) {
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // שליפת הרשימה favoriteGenres כפי שרואים בתמונה שלך
+                        List<String> myGenres = (List<String>) documentSnapshot.get("favoriteGenres");
+
+                        if (myGenres != null && !myGenres.isEmpty()) {
+                            Log.d("HomeActivity", "ז'אנרים שנמצאו: " + myGenres);
+                            fetchSongsByGenre(myGenres);
+                        } else {
+                            // אם אין ז'אנרים, נשלח אותו חזרה לבחור
+                            startActivity(new Intent(HomeActivity.this, GenreActivity.class));
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("HomeActivity", "שגיאה בטעינת משתמש", e));
+    }
+
+    private void fetchSongsByGenre(List<String> genres) {
+        // מחפש שירים שבהם השדה "genre" מופיע ברשימת ה-genres של המשתמש
+        db.collection("Songs")
+                .whereIn("genre", genres)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    songList.clear();
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.d("HomeActivity", "לא נמצאו שירים ב-DB תואמים לז'אנרים");
+                        Toast.makeText(this, "לא נמצאו שירים מתאימים לטעם שלך", Toast.LENGTH_SHORT).show();
+                    } else {
+                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                            Song song = document.toObject(Song.class);
+                            songList.add(song);
+                        }
+                        songAdapter.notifyDataSetChanged();
+                        Log.d("HomeActivity", "נטענו " + songList.size() + " שירים");
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("HomeActivity", "שגיאה במשיכת שירים", e));
+    }
+
+    // פונקציה למילוי ראשוני של המאגר (להריץ פעם אחת בלבד!)
+    private void uploadSampleSongs() {
+        List<Song> samples = new ArrayList<>();
+
+        // --- שירים בז'אנר Pop ---
+        samples.add(new Song("As It Was", "https://upload.wikimedia.org/wikipedia/en/a/a2/Harry_Styles_-_As_It_Was.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", "Pop"));
+        samples.add(new Song("Stay", "https://upload.wikimedia.org/wikipedia/en/0/07/The_Kid_Laroi_and_Justin_Bieber_-_Stay.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", "Pop"));
+
+        // --- שירים בז'אנר Jazz (מופיע אצלך בתמונה) ---
+        samples.add(new Song("Fly Me to the Moon", "https://upload.wikimedia.org/wikipedia/en/b/b2/Frank_Sinatra_-_It_Might_as_Well_Be_Swing.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "Jazz"));
+        samples.add(new Song("What a Wonderful World", "https://m.media-amazon.com/images/I/71R2o5-UfDL._SL1500_.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", "Jazz"));
+
+        // --- שירים בז'אנר Electronic (מופיע אצלך בתמונה) ---
+        samples.add(new Song("Wake Me Up", "https://upload.wikimedia.org/wikipedia/en/d/da/Avicii_Wake_Me_Up_Official_Single_Cover.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", "Electronic"));
+        samples.add(new Song("Clarity", "https://upload.wikimedia.org/wikipedia/en/a/a5/Zedd-Clarity.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", "Electronic"));
+
+        // --- שירים בז'אנר Mizrahit (מופיע אצלך בתמונה) ---
+        samples.add(new Song("קרן שמש", "https://m.media-amazon.com/images/I/41KstT18SUL._UX250_FMjpg_QL85_.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", "Mizrahit"));
+        samples.add(new Song("שקיעות אדומות", "https://m.media-amazon.com/images/I/51p6GfF9WPL._UX250_FMjpg_QL85_.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", "Mizrahit"));
+
+        // --- שירים בז'אנר Rock ---
+        samples.add(new Song("Believer", "https://upload.wikimedia.org/wikipedia/en/5/5c/Imagine_Dragons_Believer.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3", "Rock"));
+        samples.add(new Song("Numb", "https://upload.wikimedia.org/wikipedia/en/b/b9/Linkin_Park_-_Numb_CD_cover.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", "Rock"));
+
+        // לולאה שמעלה הכל ל-Firestore
+        for (Song s : samples) {
+            db.collection("Songs").add(s)
+                    .addOnSuccessListener(documentReference -> Log.d("Firestore", "שיר נוסף בהצלחה: " + s.getTitle()))
+                    .addOnFailureListener(e -> Log.e("Firestore", "שגיאה בהוספת שיר", e));
+        }
+
     }
 }

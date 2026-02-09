@@ -1,102 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:layoutDirection="rtl">
 
     <TextView
         android:id="@+id/titleText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="מה הטעם שלך במוזיקה?"
+        android:layout_marginTop="24dp"
+        android:text="מה הטעם שלך?"
         android:textColor="#FFFFFF"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+        android:textSize="36sp"
+        android:fontFamily="sans-serif-black"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/subTitle"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/titleText"
-        android:text="בחר עד 3 ז'אנרים כדי שנוכל להתאים לך מוזיקה"
+        android:layout_marginTop="8dp"
+        android:text="בחר עד 3 ז'אנרים שאתה אוהב"
         android:textColor="#B3B3B3"
-        android:textSize="16sp" />
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleText" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/finishBtn"
-        android:layout_below="@id/subTitle"
+        android:layout_height="0dp"
         android:layout_marginTop="32dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="24dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/finishBtn"
+        app:layout_constraintTop_toBottomOf="@id/subTitle">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/genreChipGroup"
+        <GridLayout
+            android:id="@+id/genreGridLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:chipSpacingHorizontal="12dp"
-            app:chipSpacingVertical="12dp"
-            app:singleSelection="false">
+            android:columnCount="2"
+            android:alignmentMode="alignMargins"
+            android:columnOrderPreserved="false">
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Pop"
+                android:textSize="20sp"
                 android:textColor="#FFFFFF"
-                app:chipBackgroundColor="@color/design_default_color_secondary" />
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp"
+                app:chipStrokeWidth="0dp"
+                app:checkedIconVisible="true"
+                app:checkedIconTint="#1DB954" />
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Rock"
-                android:textColor="#FFFFFF" />
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp" />
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Hip Hop"
-                android:textColor="#FFFFFF" />
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp" />
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Jazz"
-                android:textColor="#FFFFFF" />
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp" />
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Electronic"
-                android:textColor="#FFFFFF" />
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp" />
 
             <com.google.android.material.chip.Chip
                 style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
                 android:text="Mizrahit"
-                android:textColor="#FFFFFF" />
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#282828"
+                app:chipCornerRadius="16dp" />
 
-        </com.google.android.material.chip.ChipGroup>
-    </ScrollView>
+        </GridLayout>
+    </androidx.core.widget.NestedScrollView>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/finishBtn"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_alignParentBottom="true"
+        android:layout_height="64dp"
+        android:layout_marginBottom="8dp"
         android:backgroundTint="#1DB954"
         android:text="סיום והמשך"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
+        android:textColor="#000000"
+        android:textSize="20sp"
         android:textStyle="bold"
-        app:cornerRadius="30dp" />
+        app:cornerRadius="32dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

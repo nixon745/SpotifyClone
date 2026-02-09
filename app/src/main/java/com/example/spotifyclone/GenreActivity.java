@@ -3,11 +3,11 @@ package com.example.spotifyclone;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.widget.GridLayout;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.ArrayList;
@@ -15,44 +15,86 @@ import java.util.List;
 
 public class GenreActivity extends AppCompatActivity {
 
-    ChipGroup genreChipGroup;
-    Button finishBtn;
-    FirebaseFirestore db;
-    FirebaseAuth mAuth;
+    // הגדרת משתנים התואמים ל-XML
+    private GridLayout genreGridLayout;
+    private MaterialButton finishBtn;
+    private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+
+    private static final int MAX_SELECTION = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_genre);
 
+        // אתחול Firebase
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        genreChipGroup = findViewById(R.id.genreChipGroup);
+        // קישור רכיבים מה-XML (שמות ה-ID תואמים ל-XML למעלה)
+        genreGridLayout = findViewById(R.id.genreGridLayout);
         finishBtn = findViewById(R.id.finishBtn);
 
+        setupChipSelectionLogic();
+
         finishBtn.setOnClickListener(v -> saveUserPreferences());
+    }
+
+    private void setupChipSelectionLogic() {
+        // הגבלת בחירה ל-3 ז'אנרים בזמן אמת
+        for (int i = 0; i < genreGridLayout.getChildCount(); i++) {
+            View child = genreGridLayout.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (isChecked && getSelectedCount() > MAX_SELECTION) {
+                        chip.setChecked(false);
+                        Toast.makeText(this, "ניתן לבחור עד " + MAX_SELECTION + " ז'אנרים", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
+    }
+
+    private int getSelectedCount() {
+        int count = 0;
+        for (int i = 0; i < genreGridLayout.getChildCount(); i++) {
+            View v = genreGridLayout.getChildAt(i);
+            if (v instanceof Chip && ((Chip) v).isChecked()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void saveUserPreferences() {
         List<String> selectedGenres = new ArrayList<>();
 
-        // מעבר על כל הצ'יפים ובדיקה מה נבחר
-        for (int i = 0; i < genreChipGroup.getChildCount(); i++) {
-            Chip chip = (Chip) genreChipGroup.getChildAt(i);
-            if (chip.isChecked()) {
-                selectedGenres.add(chip.getText().toString());
+        // איסוף הטקסט מהצ'יפים המסומנים
+        for (int i = 0; i < genreGridLayout.getChildCount(); i++) {
+            View v = genreGridLayout.getChildAt(i);
+            if (v instanceof Chip) {
+                Chip chip = (Chip) v;
+                if (chip.isChecked()) {
+                    selectedGenres.add(chip.getText().toString());
+                }
             }
         }
 
-        if (selectedGenres.size() < 1) {
+        if (selectedGenres.isEmpty()) {
             Toast.makeText(this, "בחר לפחות ז'אנר אחד", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "שגיאה: משתמש לא מחובר", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String uid = mAuth.getCurrentUser().getUid();
 
-        // עדכון ב-Firestore
+        // עדכון Firestore
         finishBtn.setEnabled(false);
         finishBtn.setText("שומר...");
 
@@ -66,7 +108,7 @@ public class GenreActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     finishBtn.setEnabled(true);
                     finishBtn.setText("סיום והמשך");
-                    Toast.makeText(this, "שגיאה: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "שגיאה בשמירה: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 }
