@@ -6,7 +6,6 @@
     android:background="#121212"
     android:padding="24dp">
 
-    <!-- כפתור חזרה -->
     <ImageButton
         android:id="@+id/btnBack"
         android:layout_width="48dp"
@@ -16,7 +15,6 @@
         android:tint="#FFFFFF"
         android:contentDescription="חזרה" />
 
-    <!-- תמונת האלבום -->
     <androidx.cardview.widget.CardView
         android:id="@+id/albumCoverCard"
         android:layout_width="320dp"
@@ -36,7 +34,6 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- שם האלבום -->
     <TextView
         android:id="@+id/albumTitle"
         android:layout_width="wrap_content"
@@ -49,35 +46,33 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
-    <!-- שם האמן -->
     <TextView
-        android:id="@+id/artistName"
+        android:id="@+id/albumArtist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/albumTitle"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="8dp"
-        android:text="Kanye West"
+        android:text="Artist name"
         android:textColor="#B3B3B3"
-        android:textSize="16sp" />
+        android:textSize="18sp" />
 
-    <!-- SeekBar -->
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/artistName"
+        android:layout_below="@id/albumArtist"
         android:layout_marginTop="32dp"
         android:progressTint="#1DB954"
         android:thumbTint="#FFFFFF" />
 
-    <!-- זמן נוכחי וזמן כולל -->
     <LinearLayout
         android:id="@+id/timeLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/seekBar"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
 
         <TextView
             android:id="@+id/currentTime"
@@ -94,13 +89,12 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="end"
-            android:text="3:45"
+            android:text="0:00"
             android:textColor="#B3B3B3"
             android:textSize="12sp" />
 
     </LinearLayout>
 
-    <!-- כפתורי שליטה -->
     <LinearLayout
         android:id="@+id/controlsLayout"
         android:layout_width="match_parent"
@@ -110,7 +104,6 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <!-- כפתור רנדומלי -->
         <ImageButton
             android:id="@+id/btnShuffle"
             android:layout_width="48dp"
@@ -120,7 +113,6 @@
             android:tint="#B3B3B3"
             android:contentDescription="ערבוב" />
 
-        <!-- כפתור הקודם -->
         <ImageButton
             android:id="@+id/btnPrevious"
             android:layout_width="56dp"
@@ -131,7 +123,6 @@
             android:tint="#FFFFFF"
             android:contentDescription="הקודם" />
 
-        <!-- כפתור Play/Pause -->
         <ImageButton
             android:id="@+id/btnPlayPause"
             android:layout_width="72dp"
@@ -143,7 +134,6 @@
             android:tint="#121212"
             android:contentDescription="נגן/עצור" />
 
-        <!-- כפתור הבא -->
         <ImageButton
             android:id="@+id/btnNext"
             android:layout_width="56dp"
@@ -154,7 +144,6 @@
             android:tint="#FFFFFF"
             android:contentDescription="הבא" />
 
-        <!-- כפתור חזרה -->
         <ImageButton
             android:id="@+id/btnRepeat"
             android:layout_width="48dp"

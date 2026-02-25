@@ -16,12 +16,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerActivity extends AppCompatActivity {
 
     private ImageView albumCover;
-    private TextView albumTitle, currentTime, totalTime;
+    private TextView albumTitle, albumArtist, currentTime, totalTime;
     private SeekBar seekBar;
     private ImageButton btnPlayPause, btnPrevious, btnNext, btnBack;
 
@@ -29,23 +30,23 @@ public class PlayerActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private boolean isPlaying = false;
 
-    private String albumName;
-    private String albumImage;
-    private String songUrl;
+    // רשימה ומיקום נוכחי
+    private ArrayList<Song> songList;
+    private int currentIndex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        // קבלת נתונים מה-Intent
-        albumName = getIntent().getStringExtra("album_name");
-        albumImage = getIntent().getStringExtra("album_image");
-        songUrl = getIntent().getStringExtra("song_url");
+        // קבלת הנתונים המשולבים
+        songList = (ArrayList<Song>) getIntent().getSerializableExtra("songList");
+        currentIndex = getIntent().getIntExtra("position", 0);
 
-        // חיבור ל-Views
+        // חיבור רכיבי ה-UI (מהקוד המקורי שלך)
         albumCover = findViewById(R.id.albumCover);
         albumTitle = findViewById(R.id.albumTitle);
+        albumArtist = findViewById(R.id.albumArtist);
         currentTime = findViewById(R.id.currentTime);
         totalTime = findViewById(R.id.totalTime);
         seekBar = findViewById(R.id.seekBar);
@@ -54,55 +55,25 @@ public class PlayerActivity extends AppCompatActivity {
         btnNext = findViewById(R.id.btnNext);
         btnBack = findViewById(R.id.btnBack);
 
+        // טעינת השיר הראשון לפי המיקום
+        loadSong(songList.get(currentIndex));
+
         // כפתור חזרה
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-
-        // הצגת פרטי האלבום
-        albumTitle.setText(albumName);
-        Glide.with(this)
-                .load(albumImage)
-                .placeholder(R.drawable.ic_music_note)
-                .into(albumCover);
-
-        // אתחול MediaPlayer
-        setupMediaPlayer();
+        btnBack.setOnClickListener(v -> finish());
 
         // כפתור Play/Pause
-        btnPlayPause.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isPlaying) {
-                    pauseMusic();
-                } else {
-                    playMusic();
-                }
-            }
-        });
-
-        // כפתור הקודם
-        btnPrevious.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mediaPlayer != null) {
-                    mediaPlayer.seekTo(0);
-                }
-            }
+        btnPlayPause.setOnClickListener(v -> {
+            if (isPlaying) pauseMusic();
+            else playMusic();
         });
 
         // כפתור הבא
-        btnNext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(PlayerActivity.this, "שיר הבא - בקרוב", Toast.LENGTH_SHORT).show();
-            }
-        });
+        btnNext.setOnClickListener(v -> playNext());
 
-        // SeekBar
+        // כפתור הקודם
+        btnPrevious.setOnClickListener(v -> playPrevious());
+
+        // SeekBar לוגיקה מקורית שלך
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -110,16 +81,27 @@ public class PlayerActivity extends AppCompatActivity {
                     mediaPlayer.seekTo(progress);
                 }
             }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
     }
 
-    private void setupMediaPlayer() {
+    private void loadSong(Song song) {
+        // שחרור נגן קודם לפני טעינת חדש
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        // עדכון UI לפי השיר החדש
+        albumTitle.setText(song.getTitle());
+        albumArtist.setText(song.getArtist());
+        Glide.with(this)
+                .load(song.getImageUrl())
+                .placeholder(R.drawable.ic_launcher_background)
+                .into(albumCover);
+
         try {
             mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioAttributes(
@@ -129,36 +111,37 @@ public class PlayerActivity extends AppCompatActivity {
                             .build()
             );
 
-            // אם יש URL לשיר, השתמש בו
-            if (songUrl != null && !songUrl.isEmpty()) {
-                mediaPlayer.setDataSource(songUrl);
-                mediaPlayer.prepareAsync();
+            mediaPlayer.setDataSource(song.getSongUrl());
+            mediaPlayer.prepareAsync();
 
-                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                    @Override
-                    public void onPrepared(MediaPlayer mp) {
-                        seekBar.setMax(mp.getDuration());
-                        totalTime.setText(formatTime(mp.getDuration()));
-                        playMusic();
-                    }
-                });
+            mediaPlayer.setOnPreparedListener(mp -> {
+                seekBar.setMax(mp.getDuration());
+                totalTime.setText(formatTime(mp.getDuration()));
+                playMusic(); // מתחיל אוטומטית
+            });
 
-                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mp) {
-                        pauseMusic();
-                        mediaPlayer.seekTo(0);
-                    }
-                });
-            } else {
-                // אם אין URL, הצג הודעה
-                Toast.makeText(this, "אין קובץ שמע זמין לאלבום זה", Toast.LENGTH_LONG).show();
-                totalTime.setText("0:00");
-            }
+            mediaPlayer.setOnCompletionListener(mp -> playNext()); // עובר שיר כשנגמר
 
         } catch (IOException e) {
-            e.printStackTrace();
             Toast.makeText(this, "שגיאה בטעינת השיר", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void playNext() {
+        if (currentIndex < songList.size() - 1) {
+            currentIndex++;
+            loadSong(songList.get(currentIndex));
+        } else {
+            Toast.makeText(this, "סוף הרשימה", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void playPrevious() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            loadSong(songList.get(currentIndex));
+        } else {
+            mediaPlayer.seekTo(0);
         }
     }
 
@@ -172,7 +155,7 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void pauseMusic() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+        if (mediaPlayer != null) {
             mediaPlayer.pause();
             isPlaying = false;
             btnPlayPause.setImageResource(R.drawable.ic_play);
@@ -183,13 +166,7 @@ public class PlayerActivity extends AppCompatActivity {
         if (mediaPlayer != null && isPlaying) {
             seekBar.setProgress(mediaPlayer.getCurrentPosition());
             currentTime.setText(formatTime(mediaPlayer.getCurrentPosition()));
-
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    updateSeekBar();
-                }
-            }, 100);
+            handler.postDelayed(this::updateSeekBar, 1000);
         }
     }
 
@@ -208,13 +185,5 @@ public class PlayerActivity extends AppCompatActivity {
             mediaPlayer = null;
         }
         handler.removeCallbacksAndMessages(null);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (isPlaying) {
-            pauseMusic();
-        }
     }
 }

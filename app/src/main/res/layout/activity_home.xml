@@ -1,22 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212">
 
-    <!-- תוכן ראשי -->
     <ScrollView
         android:id="@+id/mainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/miniPlayer">
+        android:layout_above="@id/miniPlayer"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Header עם שם משתמש -->
             <TextView
                 android:id="@+id/welcomeText"
                 android:layout_width="wrap_content"
@@ -28,7 +29,17 @@
                 android:layout_margin="20dp"
                 android:layoutDirection="rtl" />
 
-            <!-- שורת קטגוריות -->
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/searchView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/search_background"
+                app:queryHint="חפש שירים או אמנים..."
+                app:iconifiedByDefault="false"
+                android:layoutDirection="rtl" />
+
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -45,7 +56,6 @@
                     android:layoutDirection="rtl" />
             </HorizontalScrollView>
 
-            <!-- כותרת אלבומים -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -58,25 +68,25 @@
                 android:layout_marginBottom="12dp"
                 android:layoutDirection="rtl" />
 
-            <!-- רשימת אלבומים ב-RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
                 android:clipToPadding="false"
-                android:nestedScrollingEnabled="false" />
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="2"
+                tools:listitem="@layout/item_song" />
 
-            <!-- ספייסר -->
             <View
                 android:layout_width="match_parent"
-                android:layout_height="100dp" />
+                android:layout_height="120dp" />
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- Mini Player -->
     <LinearLayout
         android:id="@+id/miniPlayer"
         android:layout_width="match_parent"
@@ -89,67 +99,8 @@
         android:paddingEnd="12dp"
         android:visibility="gone"
         android:elevation="8dp">
-
-        <!-- תמונת אלבום -->
-        <ImageView
-            android:id="@+id/albumCoverMini"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:scaleType="centerCrop"
-            android:background="#444444" />
-
-        <!-- פרטי השיר -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="12dp"
-            android:layoutDirection="rtl">
-
-            <TextView
-                android:id="@+id/songTitleMini"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="שם השיר"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/artistNameMini"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="שם האמן"
-                android:textColor="#B3B3B3"
-                android:textSize="12sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-        </LinearLayout>
-
-        <!-- כפתורי נגן -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/playPauseBtn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@android:drawable/ic_media_play"
-                android:tint="#FFFFFF"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackgroundBorderless" />
-        </LinearLayout>
     </LinearLayout>
 
-    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
@@ -159,7 +110,6 @@
         app:itemIconTint="@android:color/white"
         app:itemTextColor="@android:color/white"
         app:menu="@menu/bottom_nav_menu"
-        app:labelVisibilityMode="labeled"
-        android:elevation="8dp" />
+        app:labelVisibilityMode="labeled" />
 
 </RelativeLayout>

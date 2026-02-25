@@ -1,68 +1,66 @@
 package com.example.spotifyclone;
 
-import android.content.Context;
-import android.content.Intent;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.content.*;
+import android.view.*;
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
-import java.util.List;
+import java.util.ArrayList;
 
-public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder> {
+public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
 
-    private Context context;
-    private List<Song> songList;
+    Context context;
+    ArrayList<Song> list;
 
-    public SongAdapter(Context context, List<Song> songList) {
+    public SongAdapter(Context context, ArrayList<Song> list) {
         this.context = context;
-        this.songList = songList;
+        this.list = list;
     }
 
     @NonNull
     @Override
-    public SongViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_song, parent, false);
-        return new SongViewHolder(view);
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context)
+                .inflate(R.layout.item_song, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
-        Song song = songList.get(position);
-        holder.tvTitle.setText(song.getTitle());
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 
-        // טעינת תמונת האלבום מה-URL
+        Song song = list.get(position);
+
+        holder.title.setText(song.getTitle());
+        holder.artist.setText(song.getArtist());
+
         Glide.with(context)
                 .load(song.getImageUrl())
-                .placeholder(R.drawable.ic_music_note)
-                .into(holder.ivCover);
+                .placeholder(R.drawable.ic_launcher_background)
+                .into(holder.image);
 
-        // לחיצה על השיר פותחת את ה-PlayerActivity ששלחת לי
+        // כאן השינוי המשולב: במקום לשלוח String בודד, שולחים את הרשימה והאינדקס
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, PlayerActivity.class);
-            intent.putExtra("album_name", song.getTitle());
-            intent.putExtra("album_image", song.getImageUrl());
-            intent.putExtra("song_url", song.getSongUrl());
+            intent.putExtra("songList", list);   // מעביר את כל הרשימה
+            intent.putExtra("position", position); // מעביר את המיקום שנבחר
             context.startActivity(intent);
         });
     }
 
     @Override
-    public int getItemCount() {
-        return songList.size();
-    }
+    public int getItemCount() { return list.size(); }
 
-    public static class SongViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivCover;
-        TextView tvTitle;
+    static class ViewHolder extends RecyclerView.ViewHolder {
 
-        public SongViewHolder(@NonNull View itemView) {
+        TextView title, artist;
+        ImageView image;
+
+        public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivCover = itemView.findViewById(R.id.songImage); // וודא שזה ה-ID ב-XML
-            tvTitle = itemView.findViewById(R.id.songTitle); // וודא שזה ה-ID ב-XML
+            title = itemView.findViewById(R.id.songTitle);
+            artist = itemView.findViewById(R.id.songArtist);
+            image = itemView.findViewById(R.id.songImage);
         }
     }
 }
