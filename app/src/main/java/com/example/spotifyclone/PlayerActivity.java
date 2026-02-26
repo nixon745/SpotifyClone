@@ -2,9 +2,9 @@ package com.example.spotifyclone;
 
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -30,7 +30,6 @@ public class PlayerActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private boolean isPlaying = false;
 
-    // רשימה ומיקום נוכחי
     private ArrayList<Song> songList;
     private int currentIndex;
 
@@ -39,11 +38,9 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        // קבלת הנתונים המשולבים
         songList = (ArrayList<Song>) getIntent().getSerializableExtra("songList");
         currentIndex = getIntent().getIntExtra("position", 0);
 
-        // חיבור רכיבי ה-UI (מהקוד המקורי שלך)
         albumCover = findViewById(R.id.albumCover);
         albumTitle = findViewById(R.id.albumTitle);
         albumArtist = findViewById(R.id.albumArtist);
@@ -55,25 +52,18 @@ public class PlayerActivity extends AppCompatActivity {
         btnNext = findViewById(R.id.btnNext);
         btnBack = findViewById(R.id.btnBack);
 
-        // טעינת השיר הראשון לפי המיקום
         loadSong(songList.get(currentIndex));
 
-        // כפתור חזרה
         btnBack.setOnClickListener(v -> finish());
 
-        // כפתור Play/Pause
         btnPlayPause.setOnClickListener(v -> {
             if (isPlaying) pauseMusic();
             else playMusic();
         });
 
-        // כפתור הבא
         btnNext.setOnClickListener(v -> playNext());
-
-        // כפתור הקודם
         btnPrevious.setOnClickListener(v -> playPrevious());
 
-        // SeekBar לוגיקה מקורית שלך
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -87,16 +77,15 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void loadSong(Song song) {
-        // שחרור נגן קודם לפני טעינת חדש
         if (mediaPlayer != null) {
             mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer = null;
         }
 
-        // עדכון UI לפי השיר החדש
         albumTitle.setText(song.getTitle());
         albumArtist.setText(song.getArtist());
+
         Glide.with(this)
                 .load(song.getImageUrl())
                 .placeholder(R.drawable.ic_launcher_background)
@@ -111,19 +100,28 @@ public class PlayerActivity extends AppCompatActivity {
                             .build()
             );
 
-            mediaPlayer.setDataSource(song.getSongUrl());
+            String songUrl = song.getSongUrl();
+
+            // בדיקה האם השיר מקומי (בתוך האפליקציה) או מהאינטרנט
+            if (songUrl.startsWith("android.resource")) {
+                Uri uri = Uri.parse(songUrl);
+                mediaPlayer.setDataSource(this, uri);
+            } else {
+                mediaPlayer.setDataSource(songUrl);
+            }
+
             mediaPlayer.prepareAsync();
 
             mediaPlayer.setOnPreparedListener(mp -> {
                 seekBar.setMax(mp.getDuration());
                 totalTime.setText(formatTime(mp.getDuration()));
-                playMusic(); // מתחיל אוטומטית
+                playMusic();
             });
 
-            mediaPlayer.setOnCompletionListener(mp -> playNext()); // עובר שיר כשנגמר
+            mediaPlayer.setOnCompletionListener(mp -> playNext());
 
         } catch (IOException e) {
-            Toast.makeText(this, "שגיאה בטעינת השיר", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "שגיאה בטעינת השיר: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -141,7 +139,7 @@ public class PlayerActivity extends AppCompatActivity {
             currentIndex--;
             loadSong(songList.get(currentIndex));
         } else {
-            mediaPlayer.seekTo(0);
+            if (mediaPlayer != null) mediaPlayer.seekTo(0);
         }
     }
 

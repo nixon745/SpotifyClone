@@ -49,7 +49,7 @@ public class HomeActivity extends AppCompatActivity {
         setupNavigation();
 
         // הגדרת ה-RecyclerView בגריד של 2 טורים לנצלו שטח המסך
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         songList = new ArrayList<>();
         songAdapter = new SongAdapter(this, songList);
         recyclerView.setAdapter(songAdapter);
@@ -140,7 +140,9 @@ public class HomeActivity extends AppCompatActivity {
         samples.add(new Song("Anti-Hero", "Taylor Swift", "https://upload.wikimedia.org/wikipedia/en/9/9f/Taylor_Swift_-_Midnights.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", "Pop"));
         samples.add(new Song("As It Was", "Harry Styles", "https://upload.wikimedia.org/wikipedia/en/a/a2/Harry_Styles_-_As_It_Was.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "Pop"));
         samples.add(new Song("Stay", "The Kid LAROI", "https://upload.wikimedia.org/wikipedia/en/0/07/The_Kid_Laroi_and_Justin_Bieber_-_Stay.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", "Pop"));
-        samples.add(new Song("Blinding Lights", "The Weekend", "https://upload.wikimedia.org/wikipedia/en/e/e6/The_Weeknd_-_Blinding_Lights.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", "Pop"));
+
+        samples.add(new Song("Blinding Lights", "The Weeknd", "https://upload.wikimedia.org/wikipedia/en/e/e6/The_Weeknd_-_Blinding_Lights.png", "android.resource://" + getPackageName() + "/" + R.raw.blinding_lights, "Pop"));
+
         samples.add(new Song("Levitating", "Dua Lipa", "https://upload.wikimedia.org/wikipedia/en/b/ba/Dua_Lipa_-_Levitating.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", "Pop"));
         samples.add(new Song("Bad Guy", "Billie Eilish", "https://upload.wikimedia.org/wikipedia/en/5/5a/Billie_Eilish_-_Bad_Guy.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", "Pop"));
         samples.add(new Song("Shape of You", "Ed Sheeran", "https://upload.wikimedia.org/wikipedia/en/b/b4/Shape_Of_You_%28Official_Single_Cover%29_by_Ed_Sheeran.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", "Pop"));
@@ -198,6 +200,7 @@ public class HomeActivity extends AppCompatActivity {
         samples.add(new Song("Get Lucky", "Daft Punk", "https://upload.wikimedia.org/wikipedia/en/a/a7/Daft_Punk_-_Get_Lucky.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-48.mp3", "Electronic"));
         samples.add(new Song("Alone", "Marshmello", "https://upload.wikimedia.org/wikipedia/en/a/a5/Marshmello_Alone.jpg", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-49.mp3", "Electronic"));
         samples.add(new Song("Scary Monsters", "Skrillex", "https://upload.wikimedia.org/wikipedia/en/e/ed/Skrillex_-_Scary_Monsters_and_Nice_Sprites.png", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-50.mp3", "Electronic"));
+
         // הוסף עוד 10 שירים דומים ל-Electronic...
 
         // לולאת העלאה ל-Firestore
