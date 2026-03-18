@@ -53,17 +53,7 @@
                 android:layoutDirection="rtl" />
         </HorizontalScrollView>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="אלבומים פופולריים"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginBottom="4dp"
-            android:layoutDirection="rtl" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -89,7 +79,59 @@
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         android:visibility="gone"
-        android:elevation="8dp">
+        android:elevation="8dp"
+        android:layoutDirection="rtl">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:cardCornerRadius="4dp">
+            <ImageView
+                android:id="@+id/miniAlbumArt"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_launcher_background" />
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp">
+
+            <TextView
+                android:id="@+id/miniSongTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="שם השיר"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/miniArtistName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="שם האמן"
+                android:textColor="#B3B3B3"
+                android:textSize="12sp"
+                android:ellipsize="end"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/miniBtnPlayPause"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_pause"
+            app:tint="#FFFFFF"
+            android:scaleType="centerInside" />
     </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

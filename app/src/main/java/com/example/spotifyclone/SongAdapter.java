@@ -18,6 +18,12 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
         this.list = list;
     }
 
+    // מאפשר לעדכן את הרשימה בזמן חיפוש ב-HomeActivity
+    public void setFilteredList(ArrayList<Song> filteredList) {
+        this.list = filteredList;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -28,7 +34,6 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-
         Song song = list.get(position);
 
         holder.title.setText(song.getTitle());
@@ -39,12 +44,17 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
                 .placeholder(R.drawable.ic_launcher_background)
                 .into(holder.image);
 
-        // כאן השינוי המשולב: במקום לשלוח String בודד, שולחים את הרשימה והאינדקס
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, PlayerActivity.class);
-            intent.putExtra("songList", list);   // מעביר את כל הרשימה
-            intent.putExtra("position", position); // מעביר את המיקום שנבחר
-            context.startActivity(intent);
+            // תיקון: מקבל את המיקום העדכני ברשימה כפי שהיא מוצגת כרגע
+            int currentPos = holder.getAdapterPosition();
+
+            if (currentPos != RecyclerView.NO_POSITION) {
+                Intent intent = new Intent(context, PlayerActivity.class);
+                // שולח את הרשימה הנוכחית (אם היא מסוננת - שולח רק את התוצאות)
+                intent.putExtra("songList", list);
+                intent.putExtra("position", currentPos);
+                context.startActivity(intent);
+            }
         });
     }
 
@@ -52,7 +62,6 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
     public int getItemCount() { return list.size(); }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-
         TextView title, artist;
         ImageView image;
 
