@@ -81,9 +81,19 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void loadSong(Song song) {
         displaySongDetails(song);
+
+        // ניקוי מאזינים ישנים לפני טעינת שיר חדש כדי למנוע כפילויות בפקודות
+        if (musicManager.mediaPlayer != null) {
+            musicManager.mediaPlayer.setOnPreparedListener(null);
+            musicManager.mediaPlayer.setOnCompletionListener(null);
+            musicManager.mediaPlayer.setOnErrorListener(null);
+        }
+
         musicManager.playSong(this, song);
 
+        // אנחנו חייבים לחכות שהשיר יהיה מוכן (בעיקר עבור iTunes API)
         musicManager.mediaPlayer.setOnPreparedListener(mp -> {
+            Log.d("Player", "Song is prepared and starting...");
             seekBar.setMax(mp.getDuration());
             totalTime.setText(formatTime(mp.getDuration()));
             mp.start();
@@ -94,7 +104,8 @@ public class PlayerActivity extends AppCompatActivity {
         musicManager.mediaPlayer.setOnCompletionListener(mp -> playNext());
 
         musicManager.mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-            Toast.makeText(this, "שגיאה בניגון", Toast.LENGTH_SHORT).show();
+            Log.e("Player", "MediaPlayer Error: What=" + what + " Extra=" + extra);
+            Toast.makeText(this, "שגיאה בטעינת השיר - נסה שוב", Toast.LENGTH_SHORT).show();
             return true;
         });
     }

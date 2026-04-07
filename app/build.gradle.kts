@@ -60,6 +60,11 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
+    // Retrofit: הספרייה שמתקשרת עם האינטרנט
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+// Converter-Gson: הספרייה שהופכת את הטקסט מהאינטרנט לאובייקטים של Java
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

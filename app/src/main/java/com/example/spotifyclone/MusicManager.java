@@ -30,24 +30,22 @@ public class MusicManager {
         }
     }
     public void playSong(Context context, Song song) {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
-
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .build());
-
         try {
-            if (song.getSongUrl().startsWith("android.resource")) {
-                mediaPlayer.setDataSource(context, Uri.parse(song.getSongUrl()));
-            } else {
-                mediaPlayer.setDataSource(song.getSongUrl());
+            if (mediaPlayer == null) {
+                mediaPlayer = new MediaPlayer();
             }
+            mediaPlayer.reset();
+            mediaPlayer.setDataSource(song.getSongUrl());
+
+            // הגדרת סוג האודיו (חשוב לאנדרואיד גרסאות חדשות)
+            mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build());
+
+            // הכנה אסינכרונית - קריטי למנוע את ה-Toast של השגיאה!
             mediaPlayer.prepareAsync();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
