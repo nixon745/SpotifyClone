@@ -1,23 +1,13 @@
 package com.example.spotifyclone;
 
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.bumptech.glide.Glide;
-
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerActivity extends AppCompatActivity {
@@ -27,7 +17,7 @@ public class PlayerActivity extends AppCompatActivity {
     private SeekBar seekBar;
     private ImageButton btnPlayPause, btnPrevious, btnNext, btnBack;
 
-    private MusicManager musicManager; // משתמש במנהל במקום MediaPlayer מקומי
+    private MusicManager musicManager;
     private Handler handler = new Handler();
 
     @Override
@@ -37,9 +27,7 @@ public class PlayerActivity extends AppCompatActivity {
 
         musicManager = MusicManager.getInstance();
 
-        ArrayList<Song> incomingList = (ArrayList<Song>) getIntent().getSerializableExtra("songList");
-        int incomingPos = getIntent().getIntExtra("position", 0);
-
+        // אתחול UI
         albumCover = findViewById(R.id.albumCover);
         albumTitle = findViewById(R.id.albumTitle);
         albumArtist = findViewById(R.id.albumArtist);
@@ -51,23 +39,27 @@ public class PlayerActivity extends AppCompatActivity {
         btnNext = findViewById(R.id.btnNext);
         btnBack = findViewById(R.id.btnBack);
 
-        // לוגיקה: אם השיר שנבחר כבר מתנגן - אל תפסיק אותו!
-        if (musicManager.currentList == null ||
-                !musicManager.currentList.get(musicManager.currentIndex).getTitle().equals(incomingList.get(incomingPos).getTitle())) {
+        if (musicManager.currentList != null && !musicManager.currentList.isEmpty()) {
+            Song current = musicManager.currentList.get(musicManager.currentIndex);
 
-            musicManager.currentList = incomingList;
-            musicManager.currentIndex = incomingPos;
-            loadSong(musicManager.currentList.get(musicManager.currentIndex));
-        } else {
-            // רק מציג את הפרטים של השיר שכבר רץ
-            displaySongDetails(musicManager.currentList.get(musicManager.currentIndex));
-            updateUIState();
+            // אם השיר כבר מנגן - רק נעדכן UI, אם לא - נטען
+            if (musicManager.mediaPlayer != null && musicManager.mediaPlayer.isPlaying()) {
+                updateUI(current);
+            } else {
+                startNewSong(current);
+            }
         }
 
         btnBack.setOnClickListener(v -> finish());
-        btnPlayPause.setOnClickListener(v -> togglePlayPause());
-        btnNext.setOnClickListener(v -> playNext());
-        btnPrevious.setOnClickListener(v -> playPrevious());
+        btnPlayPause.setOnClickListener(v -> togglePlay());
+        btnNext.setOnClickListener(v -> {
+            musicManager.playNext(this);
+            startNewSong(musicManager.currentList.get(musicManager.currentIndex));
+        });
+        btnPrevious.setOnClickListener(v -> {
+            musicManager.playPrevious(this);
+            startNewSong(musicManager.currentList.get(musicManager.currentIndex));
+        });
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -79,80 +71,52 @@ public class PlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void loadSong(Song song) {
-        displaySongDetails(song);
-
-        // ניקוי מאזינים ישנים לפני טעינת שיר חדש כדי למנוע כפילויות בפקודות
-        if (musicManager.mediaPlayer != null) {
-            musicManager.mediaPlayer.setOnPreparedListener(null);
-            musicManager.mediaPlayer.setOnCompletionListener(null);
-            musicManager.mediaPlayer.setOnErrorListener(null);
-        }
-
+    private void startNewSong(Song song) {
+        updateUI(song);
         musicManager.playSong(this, song);
 
-        // אנחנו חייבים לחכות שהשיר יהיה מוכן (בעיקר עבור iTunes API)
         musicManager.mediaPlayer.setOnPreparedListener(mp -> {
-            Log.d("Player", "Song is prepared and starting...");
             seekBar.setMax(mp.getDuration());
             totalTime.setText(formatTime(mp.getDuration()));
             mp.start();
             btnPlayPause.setImageResource(R.drawable.ic_pause);
-            updateSeekBar();
+            updateProgress();
         });
 
-        musicManager.mediaPlayer.setOnCompletionListener(mp -> playNext());
-
-        musicManager.mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-            Log.e("Player", "MediaPlayer Error: What=" + what + " Extra=" + extra);
-            Toast.makeText(this, "שגיאה בטעינת השיר - נסה שוב", Toast.LENGTH_SHORT).show();
-            return true;
+        musicManager.mediaPlayer.setOnCompletionListener(mp -> {
+            musicManager.playNext(this);
+            startNewSong(musicManager.currentList.get(musicManager.currentIndex));
         });
     }
 
-    private void displaySongDetails(Song song) {
+    private void updateUI(Song song) {
         albumTitle.setText(song.getTitle());
         albumArtist.setText(song.getArtist());
         Glide.with(this).load(song.getImageUrl()).into(albumCover);
+        if (musicManager.mediaPlayer != null) {
+            btnPlayPause.setImageResource(musicManager.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+        }
     }
 
-    private void togglePlayPause() {
+    private void togglePlay() {
         if (musicManager.mediaPlayer != null) {
             if (musicManager.mediaPlayer.isPlaying()) musicManager.mediaPlayer.pause();
             else musicManager.mediaPlayer.start();
-            updateUIState();
+            btnPlayPause.setImageResource(musicManager.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+            updateProgress();
         }
     }
 
-    private void updateUIState() {
-        btnPlayPause.setImageResource(musicManager.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
-        updateSeekBar();
-    }
-
-    private void playNext() {
-        if (musicManager.currentIndex < musicManager.currentList.size() - 1) {
-            musicManager.currentIndex++;
-            loadSong(musicManager.currentList.get(musicManager.currentIndex));
-        }
-    }
-
-    private void playPrevious() {
-        if (musicManager.currentIndex > 0) {
-            musicManager.currentIndex--;
-            loadSong(musicManager.currentList.get(musicManager.currentIndex));
-        }
-    }
-
-    private void updateSeekBar() {
+    private void updateProgress() {
         if (musicManager.mediaPlayer != null && musicManager.mediaPlayer.isPlaying()) {
             seekBar.setProgress(musicManager.mediaPlayer.getCurrentPosition());
             currentTime.setText(formatTime(musicManager.mediaPlayer.getCurrentPosition()));
-            handler.postDelayed(this::updateSeekBar, 1000);
+            handler.postDelayed(this::updateProgress, 1000);
         }
     }
 
     private String formatTime(int ms) {
-        return String.format("%d:%02d", TimeUnit.MILLISECONDS.toMinutes(ms),
-                TimeUnit.MILLISECONDS.toSeconds(ms) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(ms)));
+        return String.format("%02d:%02d", TimeUnit.MILLISECONDS.toMinutes(ms),
+                TimeUnit.MILLISECONDS.toSeconds(ms) % 60);
     }
 }

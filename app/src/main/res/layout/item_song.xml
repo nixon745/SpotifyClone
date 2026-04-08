@@ -43,5 +43,13 @@
             android:textColor="@android:color/darker_gray"
             android:textSize="12sp" />
 
+        <ImageButton
+            android:id="@+id/btnFavorite"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_heart_empty"
+            android:contentDescription="Favorite" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

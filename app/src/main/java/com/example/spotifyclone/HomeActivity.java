@@ -1,10 +1,11 @@
 package com.example.spotifyclone;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -36,23 +37,24 @@ public class HomeActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private SearchView searchView;
 
-    // ה-Music Manager שלנו
     private MusicManager musicManager;
     private LinearLayout miniPlayer;
     private TextView miniTitle, miniArtist;
     private ImageView miniImage;
-    private ImageButton miniPlayBtn;
+    private ImageButton miniPlayBtn, miniNextBtn, miniPrevBtn;
     private BatteryReceiver batteryReceiver = new BatteryReceiver();
+    private boolean isCurrentlyLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        // 1. קודם כל מאתחלים רשימות כדי שלא יהיה NullPointerException
+        songList = new ArrayList<>();
+        fullSongList = new ArrayList<>();
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-
-        // אתחול ה-MusicManager
         musicManager = MusicManager.getInstance();
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -61,7 +63,7 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        // קישור אלמנטים מה-XML
+        // 2. קישור ה-UI (וודא שה-IDs תואמים ל-XML ששלחת)
         welcomeText = findViewById(R.id.welcomeText);
         recyclerView = findViewById(R.id.recyclerView);
         searchView = findViewById(R.id.searchView);
@@ -70,193 +72,264 @@ public class HomeActivity extends AppCompatActivity {
         miniArtist = findViewById(R.id.miniArtistName);
         miniImage = findViewById(R.id.miniAlbumArt);
         miniPlayBtn = findViewById(R.id.miniBtnPlayPause);
+        miniNextBtn = findViewById(R.id.miniBtnNext);
+        miniPrevBtn = findViewById(R.id.miniBtnPrev);
 
-        setupNavigation();
-        setupRecyclerView();
-
-        welcomeText.setText("שלום, " + (currentUser.getDisplayName() != null ? currentUser.getDisplayName() : "אורח") + "!");
-
-        setupSearchListener();
-        setupMiniPlayerListeners();
-
-        // טעינת הנתונים (מיינסטרים + פיירבייס בסוף)
-        loadInitialData();
-
-        registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_LOW));
-    }
-
-    private void setupRecyclerView() {
+        // 3. הגדרת ה-RecyclerView
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        songList = new ArrayList<>();
-        fullSongList = new ArrayList<>();
         songAdapter = new SongAdapter(this, songList);
         recyclerView.setAdapter(songAdapter);
+
+        // 4. הגדרת המאזינים (Listeners)
+        setupSearchListener();
+        setupMiniPlayerListeners();
+        setupNavigation();
+
+        // 5. טעינת נתונים
+
+        loadInitialData();
+
+        try {
+            registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_LOW));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (getIntent().getBooleanExtra("openSearch", false)) {
+            searchView.requestFocus();
+            searchView.setIconified(false);
+        }
     }
 
     private void loadInitialData() {
-        ArrayList<Song> combined = new ArrayList<>();
-        String[] mainstreamArtists = {"Kanye West", "Taylor Swift", "Drake", "The Weeknd", "Omer Adam", "Travis Scott" , "Bad Bunny"};
+        if (isCurrentlyLoading) return;
+        isCurrentlyLoading = true;
+
+        // ניקוי רשימות התחלתי
+        fullSongList.clear();
+        songList.clear();
+        songAdapter.notifyDataSetChanged();
+
+        String[] mainstreamArtists = {"Kanye West", "Taylor Swift", "Drake", "The Weeknd", "Omer Adam", "Travis Scott"};
         final int[] pendingRequests = {mainstreamArtists.length};
+        final ArrayList<Song> tempData = new ArrayList<>();
 
         for (String artist : mainstreamArtists) {
-            RetrofitClient.getApiService().searchSongs(artist, 40, "song").enqueue(new Callback<ITunesResponse>() {
+            RetrofitClient.getApiService().searchSongs(artist, 50, "song").enqueue(new Callback<ITunesResponse>() {
                 @Override
                 public void onResponse(Call<ITunesResponse> call, Response<ITunesResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         for (ITunesResult result : response.body().getResults()) {
-                            combined.add(result.toSong());
+                            tempData.add(result.toSong());
                         }
                     }
-                    checkAllRequestsFinished(pendingRequests, combined);
+                    // קריאה לפונקציה (שמנו לב שהשם תואם למה שכתוב כאן)
+                    handleRequestFinished(pendingRequests, tempData);
                 }
 
                 @Override
                 public void onFailure(Call<ITunesResponse> call, Throwable t) {
-                    checkAllRequestsFinished(pendingRequests, combined);
+                    handleRequestFinished(pendingRequests, tempData);
                 }
             });
         }
     }
 
-    private void checkAllRequestsFinished(int[] pending, ArrayList<Song> combined) {
+    private void handleRequestFinished(int[] pending, ArrayList<Song> collectedSongs) {
         pending[0]--;
+
+        // רק כשכל האמנים חזרו מה-API
         if (pending[0] <= 0) {
-            db.collection("Songs").get().addOnSuccessListener(queryDocumentSnapshots -> {
-                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                    Song fbSong = doc.toObject(Song.class);
-                    // מניעת כפילויות
-                    boolean exists = false;
-                    for (Song s : combined) {
-                        if (s.getTitle().equalsIgnoreCase(fbSong.getTitle())) { exists = true; break; }
-                    }
-                    if (!exists) combined.add(fbSong);
+            // משיכת שירים מ-Firebase
+            db.collection("Songs").get().addOnSuccessListener(querySnapshots -> {
+                for (QueryDocumentSnapshot doc : querySnapshots) {
+                    collectedSongs.add(doc.toObject(Song.class));
                 }
 
-                // מיון לפי אומן ואז אלבום
-                combined.sort((s1, s2) -> {
-                    int artComp = s1.getArtist().compareToIgnoreCase(s2.getArtist());
-                    if (artComp != 0) return artComp;
-                    return (s1.getAlbumName() != null ? s1.getAlbumName() : "")
-                            .compareToIgnoreCase(s2.getAlbumName() != null ? s2.getAlbumName() : "");
+                // --- סינון כפילויות ---
+                ArrayList<Song> finalCleanList = new ArrayList<>();
+                java.util.HashSet<String> seen = new java.util.HashSet<>();
+
+                for (Song s : collectedSongs) {
+                    // יצירת מפתח ייחודי משילוב של שם ואמן
+                    String key = (s.getTitle() + s.getArtist()).toLowerCase().trim();
+                    if (!seen.contains(key)) {
+                        seen.add(key);
+                        finalCleanList.add(s);
+                    }
+                }
+
+                // --- מיון מעורבב לפי אלבום ---
+                Collections.sort(finalCleanList, (s1, s2) -> {
+                    String a1 = s1.getAlbumName() != null ? s1.getAlbumName() : "Unknown";
+                    String a2 = s2.getAlbumName() != null ? s2.getAlbumName() : "Unknown";
+                    return a1.compareToIgnoreCase(a2);
                 });
 
+                // עדכון ה-UI פעם אחת בלבד
                 runOnUiThread(() -> {
                     fullSongList.clear();
-                    fullSongList.addAll(combined);
+                    fullSongList.addAll(finalCleanList);
                     songList.clear();
-                    songList.addAll(combined);
+                    songList.addAll(finalCleanList);
                     songAdapter.notifyDataSetChanged();
+                    isCurrentlyLoading = false;
                 });
             });
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        updateMiniPlayerUI();
+    // פונקציית עזר למקרה של כישלון ב-Firestore
+    private void processAndDisplay(ArrayList<Song> list) {
+        ArrayList<Song> distinct = new ArrayList<>();
+        java.util.HashSet<String> seen = new java.util.HashSet<>();
+        for (Song s : list) {
+            String key = (s.getTitle() + s.getArtist()).toLowerCase().replaceAll("\\s+", "");
+            if (!seen.contains(key)) { seen.add(key); distinct.add(s); }
+        }
+        runOnUiThread(() -> {
+            fullSongList.clear();
+            fullSongList.addAll(distinct);
+            songList.clear();
+            songList.addAll(distinct);
+            songAdapter.notifyDataSetChanged();
+        });
     }
 
-    private void updateMiniPlayerUI() {
-        if (musicManager != null && musicManager.mediaPlayer != null && musicManager.currentIndex != -1) {
+    private void setupSearchListener() {
+        if (searchView == null) return;
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override public boolean onQueryTextSubmit(String query) { return false; }
+            @Override public boolean onQueryTextChange(String newText) {
+                if (fullSongList == null || fullSongList.isEmpty()) return false;
+                if (newText.isEmpty()) {
+                    songList.clear();
+                    songList.addAll(fullSongList);
+                    songAdapter.notifyDataSetChanged();
+                } else {
+                    filterSongs(newText);
+                }
+                return true;
+            }
+        });
+    }
+
+    private void filterSongs(String query) {
+        ArrayList<Song> filtered = new ArrayList<>();
+        java.util.HashSet<String> seenInSearch = new java.util.HashSet<>();
+        String lowerQuery = query.toLowerCase();
+
+        for (Song song : fullSongList) {
+            String title = (song.getTitle() != null) ? song.getTitle().toLowerCase() : "";
+            String artist = (song.getArtist() != null) ? song.getArtist().toLowerCase() : "";
+
+            if (title.contains(lowerQuery) || artist.contains(lowerQuery)) {
+                String key = title + artist;
+                if (!seenInSearch.contains(key)) {
+                    seenInSearch.add(key);
+                    filtered.add(song);
+                }
+            }
+        }
+        songList.clear();
+        songList.addAll(filtered);
+        songAdapter.notifyDataSetChanged();
+    }
+
+    private void setupMiniPlayerListeners() {
+        if (miniPlayer == null) return;
+        miniPlayer.setOnClickListener(v -> startActivity(new Intent(this, PlayerActivity.class)));
+
+        if (miniPlayBtn != null) {
+            miniPlayBtn.setOnClickListener(v -> {
+                if (musicManager.mediaPlayer != null) {
+                    if (musicManager.mediaPlayer.isPlaying()) musicManager.mediaPlayer.pause();
+                    else musicManager.mediaPlayer.start();
+                    updateMiniPlayerUI();
+                }
+            });
+        }
+
+        if (miniNextBtn != null) {
+            miniNextBtn.setOnClickListener(v -> {
+                musicManager.playNext(this);
+                if (musicManager.mediaPlayer != null) {
+                    musicManager.mediaPlayer.setOnPreparedListener(mp -> {
+                        mp.start();
+                        updateMiniPlayerUI();
+                    });
+                }
+            });
+        }
+
+        if (miniPrevBtn != null) {
+            miniPrevBtn.setOnClickListener(v -> {
+                musicManager.playPrevious(this);
+                if (musicManager.mediaPlayer != null) {
+                    musicManager.mediaPlayer.setOnPreparedListener(mp -> {
+                        mp.start();
+                        updateMiniPlayerUI();
+                    });
+                }
+            });
+        }
+    }
+
+    public void updateMiniPlayerUI() {
+        if (musicManager != null && musicManager.mediaPlayer != null && musicManager.currentIndex != -1 && miniPlayer != null) {
             miniPlayer.setVisibility(View.VISIBLE);
             Song current = musicManager.currentList.get(musicManager.currentIndex);
-            miniTitle.setText(current.getTitle());
-            miniArtist.setText(current.getArtist());
-            Glide.with(this).load(current.getImageUrl()).into(miniImage);
-            miniPlayBtn.setImageResource(musicManager.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
-        } else {
+            if (miniTitle != null) miniTitle.setText(current.getTitle());
+            if (miniArtist != null) miniArtist.setText(current.getArtist());
+            if (miniImage != null) Glide.with(this).load(current.getImageUrl()).into(miniImage);
+            if (miniPlayBtn != null) {
+                miniPlayBtn.setImageResource(musicManager.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+            }
+        } else if (miniPlayer != null) {
             miniPlayer.setVisibility(View.GONE);
         }
     }
 
-    private void setupMiniPlayerListeners() {
-        miniPlayer.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PlayerActivity.class);
-            intent.putExtra("songList", musicManager.currentList);
-            intent.putExtra("position", musicManager.currentIndex);
-            startActivity(intent);
-        });
-
-        miniPlayBtn.setOnClickListener(v -> {
-            if (musicManager.mediaPlayer != null) {
-                if (musicManager.mediaPlayer.isPlaying()) {
-                    musicManager.mediaPlayer.pause();
-                } else {
-                    musicManager.mediaPlayer.start();
-                }
-                updateMiniPlayerUI();
-            }
-        });
-    }
-
-    // --- שאר פונקציות הניווט והחיפוש נשארות אותו דבר ---
-    private void setupSearchListener() {
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                if (!query.trim().isEmpty()) searchMusicFromAPI(query);
-                return true;
-            }
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (newText.isEmpty()) resetToMainList();
-                else filterSongs(newText);
-                return true;
-            }
-        });
-    }
-
-    private void searchMusicFromAPI(String query) {
-        RetrofitClient.getApiService().searchSongs(query, 100, "song").enqueue(new Callback<ITunesResponse>() {
-            @Override
-            public void onResponse(Call<ITunesResponse> call, Response<ITunesResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ArrayList<Song> results = new ArrayList<>();
-                    for (ITunesResult r : response.body().getResults()) results.add(r.toSong());
-                    runOnUiThread(() -> {
-                        songList.clear();
-                        songList.addAll(results);
-                        songAdapter.notifyDataSetChanged();
-                    });
-                }
-            }
-            @Override public void onFailure(Call<ITunesResponse> call, Throwable t) {}
-        });
-    }
-
-    private void resetToMainList() {
-        songList.clear();
-        songList.addAll(fullSongList);
-        songAdapter.notifyDataSetChanged();
-    }
-
-    private void filterSongs(String query) {
-        ArrayList<Song> filteredList = new ArrayList<>();
-        String lowerCaseQuery = query.toLowerCase().trim();
-
-        for (Song song : fullSongList) {
-            // בדיקה אם השאילתה קיימת בשם השיר או בשם האמן
-            if (song.getTitle().toLowerCase().contains(lowerCaseQuery) ||
-                    song.getArtist().toLowerCase().contains(lowerCaseQuery)) {
-                filteredList.add(song);
-            }
-        }
-
-        // עדכון האדפטר עם הרשימה המסוננת
-        songAdapter.setFilteredList(filteredList);
-    }
-
     private void setupNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.setSelectedItemId(R.id.nav_home);
+
         bottomNav.setOnItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.nav_logout) {
-                mAuth.signOut();
-                goToLogin();
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_home) {
+                hideKeyboard(searchView); // ירוץ רק אם searchView לא null
+                return true;
+            } else if (itemId == R.id.nav_search) {
+                showKeyboard(searchView);
+                return false;
+            } else if (itemId == R.id.nav_library) {
+                hideKeyboard(searchView); // חשוב לסגור לפני המעבר
+                startActivity(new Intent(this, FavoritesActivity.class));
                 return true;
             }
             return false;
         });
+    }
+
+    // פונקציות הפורמט שביקשת:
+    private void showKeyboard(SearchView sView) {
+        if (sView != null) {
+            sView.setIconified(false);
+            sView.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(sView, InputMethodManager.SHOW_IMPLICIT);
+            }
+        }
+    }
+
+    private void hideKeyboard(View view) {
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
     }
 
     private void goToLogin() {
@@ -265,8 +338,32 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        updateMiniPlayerUI();
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.setSelectedItemId(R.id.nav_home);
+
+        // טעינת השם המעודכן מה-Firestore
+        loadUserName();
+    }
+    private void loadUserName() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            FirebaseFirestore.getInstance().collection("users").document(uid)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String name = documentSnapshot.getString("name");
+                            TextView welcomeText = findViewById(R.id.welcomeText); // תוודא שזה ה-ID של הטקסט שלך
+                            welcomeText.setText("שלום, " + name);
+                        }
+                    });
+        }
+    }
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(batteryReceiver);
+        try { unregisterReceiver(batteryReceiver); } catch (Exception e) {}
     }
 }

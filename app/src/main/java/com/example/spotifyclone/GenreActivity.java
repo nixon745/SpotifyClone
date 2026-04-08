@@ -21,7 +21,7 @@ public class GenreActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    private static final int MAX_SELECTION = 3;
+    private static final int MAX_SELECTION = 4;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

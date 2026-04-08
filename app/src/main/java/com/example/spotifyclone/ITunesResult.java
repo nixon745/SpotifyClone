@@ -4,19 +4,19 @@ public class ITunesResult {
     private String trackName;
     private String primaryGenreName;
     private String artistName;
-    private String collectionName;
+    private String collectionName; // זה שם האלבום ב-iTunes
     private String artworkUrl100;
     private String previewUrl;
 
-    // אלו ה-Getters. בלעדיהם, ה-HomeActivity לא יוכל "למשוך" את המידע
     public String getTrackName() {
         return trackName;
     }
-    public String primaryGenreName() {
+
+    public String getPrimaryGenreName() { // הוספתי get למען הסדר הטוב
         return primaryGenreName;
     }
 
-    public String collectionName() {
+    public String getCollectionName() { // הוספתי get
         return collectionName;
     }
 
@@ -32,8 +32,17 @@ public class ITunesResult {
         return previewUrl;
     }
 
-    // הפונקציה שהופכת את זה לאובייקט Song שאתה כבר מכיר
+    // הפונקציה שהופכת את תוצאת ה-API לאובייקט Song
     public Song toSong() {
-        return new Song(trackName, artistName, artworkUrl100, previewUrl, primaryGenreName, collectionName);
+        // חשוב: הסדר כאן חייב להתאים בדיוק לבנאי (Constructor) שבנית ב-Song.java
+        // title, artist, imageUrl, songUrl, genre, albumName
+        return new Song(
+                trackName,
+                artistName,
+                artworkUrl100,
+                previewUrl,
+                primaryGenreName,
+                collectionName // זה נכנס לתוך ה-albumName ב-Song
+        );
     }
 }
