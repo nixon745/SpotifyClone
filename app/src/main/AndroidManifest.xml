@@ -5,6 +5,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -22,10 +30,9 @@
         </activity>
 
         <activity android:name=".RegisterActivity" />
-        <activity android:name=".HomeActivity" />
+        <activity android:name=".HomeActivity" android:exported="true" />
         <activity android:name=".GenreActivity" />
         <activity android:name=".FavoritesActivity" />
-
         <activity android:name=".ProfileActivity" />
 
         <activity
@@ -34,14 +41,21 @@
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:exported="false" />
 
-        <receiver
-            android:name=".BatteryReceiver"
-            android:exported="true">
+        <receiver android:name=".BatteryReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BATTERY_LOW" />
             </intent-filter>
         </receiver>
 
-    </application>
+        <receiver
+            android:name=".AlarmReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.spotifyclone.START_ALARM" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
+    </application>
 </manifest>

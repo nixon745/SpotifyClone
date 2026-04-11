@@ -18,6 +18,16 @@ public class MusicManager {
     public ArrayList<Song> currentList;
     public int currentIndex = -1;
 
+    // --- הוספה: מנגנון עדכון למסכים ---
+    public interface MusicUpdateListener {
+        void onSongChanged();
+    }
+    private MusicUpdateListener listener;
+    public void setListener(MusicUpdateListener listener) {
+        this.listener = listener;
+    }
+    // --------------------------------
+
     public static MusicManager getInstance() {
         if (instance == null) {
             instance = new MusicManager();
@@ -26,9 +36,24 @@ public class MusicManager {
     }
 
     public void playNext(Context context) {
-        if (currentList != null && currentIndex < currentList.size() - 1) {
+        if (currentList == null || currentList.isEmpty()) return;
+
+        if (currentIndex < currentList.size() - 1) {
+            // יש שיר הבא - עוברים אליו כרגיל
             currentIndex++;
             playSong(context, currentList.get(currentIndex));
+        } else {
+            // הגענו לשיר האחרון בתור - נפעיל אותו מחדש (Loop)
+            // אפשר גם לאפס את האינדקס ל-0 אם אתה רוצה שיחזור לתחילת הרשימה
+            currentIndex = currentIndex; // נשארים על אותו אינדקס
+            playSong(context, currentList.get(currentIndex));
+
+            Log.d("MusicManager", "Last song in queue, restarting for loop.");
+        }
+
+        // עדכון ה-UI
+        if (listener != null) {
+            listener.onSongChanged();
         }
     }
 
@@ -36,26 +61,18 @@ public class MusicManager {
         if (currentList != null && currentIndex > 0) {
             currentIndex--;
             playSong(context, currentList.get(currentIndex));
+            // הוספה: עדכון ה-UI
+            if (listener != null) listener.onSongChanged();
         }
     }
 
     public void playSong(Context context, Song song) {
-        // בדיקה: אם זה אותו שיר שכבר מנגן, אל תעשה כלום
-        // (אופציונלי: מחק את ה-if הזה אם אתה רוצה שלחיצה תמיד תתחיל מהתחלה)
-    /*
-    if (mediaPlayer != null && currentIndex != -1 &&
-        currentList.get(currentIndex).getSongUrl().equals(song.getSongUrl())) {
-        if (!mediaPlayer.isPlaying()) mediaPlayer.start();
-        return;
-    }
-    */
-
         try {
             if (mediaPlayer == null) {
                 mediaPlayer = new MediaPlayer();
             }
 
-            mediaPlayer.reset(); // מאפס את הנגן מהשיר הקודם
+            mediaPlayer.reset();
             mediaPlayer.setDataSource(song.getSongUrl());
 
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
@@ -63,10 +80,25 @@ public class MusicManager {
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .build());
 
+            // --- הוספת מנגנון לופ לסוף התור ---
+            mediaPlayer.setOnCompletionListener(mp -> {
+                // בודקים אם אנחנו בשיר האחרון ברשימה
+                if (currentList != null && currentIndex == currentList.size() - 1) {
+                    Log.d("MusicManager", "הגענו לשיר האחרון - מפעיל לופ");
+                    mp.seekTo(0); // חוזר לתחילת השיר
+                    mp.start();   // מנגן שוב
+                } else {
+                    // אם יש עוד שירים, עובר לשיר הבא אוטומטית
+                    playNext(context);
+                }
+            });
+            // ---------------------------------
+
             mediaPlayer.setOnPreparedListener(mp -> {
                 mp.start();
 
-                // עדכון המיני פלייר ב-HomeActivity או FavoritesActivity אם הן פתוחות
+                if (listener != null) listener.onSongChanged();
+
                 if (context instanceof HomeActivity) {
                     ((HomeActivity) context).updateMiniPlayerUI();
                 } else if (context instanceof FavoritesActivity) {
@@ -74,7 +106,7 @@ public class MusicManager {
                 }
             });
 
-            mediaPlayer.prepareAsync(); // טעינה מהאינטרנט
+            mediaPlayer.prepareAsync();
 
         } catch (Exception e) {
             Log.e("MusicManager", "Error playing song", e);
@@ -103,7 +135,6 @@ public class MusicManager {
         String rawId = song.getTitle() + song.getArtist();
         String docId = String.valueOf(rawId.hashCode());
 
-        // שימוש ב-users (אות קטנה)
         DocumentReference favRef = FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(userId)

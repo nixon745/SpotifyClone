@@ -57,15 +57,25 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.ViewHolder> {
         });
 
         // --- התיקון כאן: לחיצה על השורה לנגינה ---
+        // --- התיקון המעודכן: לחיצה על השורה לנגינה ---
         holder.itemView.setOnClickListener(v -> {
             int currentPos = holder.getAdapterPosition();
             if (currentPos != RecyclerView.NO_POSITION) {
-                // 1. עדכון הרשימה ב-MusicManager
+                // 1. עדכון הרשימה והאינדקס ב-MusicManager
                 musicManager.currentList = new ArrayList<>(list);
                 musicManager.currentIndex = currentPos;
 
-                // 2. פקודה קריטית: תנגן את השיר שנלחץ עכשיו!
+                // 2. פקודה לנגן את השיר
                 musicManager.playSong(context, list.get(currentPos));
+
+                // --- כאן התיקון הקריטי שמונע את הבעיה שבתמונה ---
+                // אנחנו אומרים ל-HomeActivity לעדכן את המיני-פלייר שלו עכשיו
+                if (context instanceof HomeActivity) {
+                    ((HomeActivity) context).updateMiniPlayerUI();
+                } else if (context instanceof FavoritesActivity) {
+                    ((FavoritesActivity) context).updateMiniPlayerUI();
+                }
+                // ------------------------------------------------
 
                 // 3. מעבר למסך הנגן
                 context.startActivity(new Intent(context, PlayerActivity.class));
