@@ -36,6 +36,10 @@
         <activity android:name=".ProfileActivity" />
 
         <activity
+            android:name=".CreatePlaylistActivity"
+            android:windowSoftInputMode="adjustPan" />
+
+        <activity
             android:name=".PlayerActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar"

@@ -3,13 +3,12 @@ package com.example.spotifyclone;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class MusicManager {
@@ -18,15 +17,14 @@ public class MusicManager {
     public ArrayList<Song> currentList;
     public int currentIndex = -1;
 
-    // --- הוספה: מנגנון עדכון למסכים ---
     public interface MusicUpdateListener {
         void onSongChanged();
     }
     private MusicUpdateListener listener;
+
     public void setListener(MusicUpdateListener listener) {
         this.listener = listener;
     }
-    // --------------------------------
 
     public static MusicManager getInstance() {
         if (instance == null) {
@@ -39,30 +37,19 @@ public class MusicManager {
         if (currentList == null || currentList.isEmpty()) return;
 
         if (currentIndex < currentList.size() - 1) {
-            // יש שיר הבא - עוברים אליו כרגיל
             currentIndex++;
-            playSong(context, currentList.get(currentIndex));
         } else {
-            // הגענו לשיר האחרון בתור - נפעיל אותו מחדש (Loop)
-            // אפשר גם לאפס את האינדקס ל-0 אם אתה רוצה שיחזור לתחילת הרשימה
-            currentIndex = currentIndex; // נשארים על אותו אינדקס
-            playSong(context, currentList.get(currentIndex));
-
-            Log.d("MusicManager", "Last song in queue, restarting for loop.");
+            currentIndex = 0;
         }
 
-        // עדכון ה-UI
-        if (listener != null) {
-            listener.onSongChanged();
-        }
+        // שימוש ב-ApplicationContext כדי שהנגן לא יהיה קשור למסך שעלול להיסגר
+        playSong(context.getApplicationContext(), currentList.get(currentIndex));
     }
 
     public void playPrevious(Context context) {
         if (currentList != null && currentIndex > 0) {
             currentIndex--;
-            playSong(context, currentList.get(currentIndex));
-            // הוספה: עדכון ה-UI
-            if (listener != null) listener.onSongChanged();
+            playSong(context.getApplicationContext(), currentList.get(currentIndex));
         }
     }
 
@@ -74,36 +61,28 @@ public class MusicManager {
 
             mediaPlayer.reset();
             mediaPlayer.setDataSource(song.getSongUrl());
-
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .build());
 
-            // --- הוספת מנגנון לופ לסוף התור ---
+            // מעבר אוטומטי בטוח
             mediaPlayer.setOnCompletionListener(mp -> {
-                // בודקים אם אנחנו בשיר האחרון ברשימה
-                if (currentList != null && currentIndex == currentList.size() - 1) {
-                    Log.d("MusicManager", "הגענו לשיר האחרון - מפעיל לופ");
-                    mp.seekTo(0); // חוזר לתחילת השיר
-                    mp.start();   // מנגן שוב
-                } else {
-                    // אם יש עוד שירים, עובר לשיר הבא אוטומטית
-                    playNext(context);
-                }
+                new Handler(Looper.getMainLooper()).post(() -> playNext(context));
             });
-            // ---------------------------------
 
             mediaPlayer.setOnPreparedListener(mp -> {
                 mp.start();
-
-                if (listener != null) listener.onSongChanged();
-
-                if (context instanceof HomeActivity) {
-                    ((HomeActivity) context).updateMiniPlayerUI();
-                } else if (context instanceof FavoritesActivity) {
-                    ((FavoritesActivity) context).updateMiniPlayerUI();
-                }
+                // עדכון UI בטוח דרך ה-Handler הראשי
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (listener != null) {
+                        try {
+                            listener.onSongChanged();
+                        } catch (Exception e) {
+                            Log.e("MusicManager", "Update failed: " + e.getMessage());
+                        }
+                    }
+                });
             });
 
             mediaPlayer.prepareAsync();
@@ -115,9 +94,7 @@ public class MusicManager {
 
     public void stopMusic() {
         if (mediaPlayer != null) {
-            if (mediaPlayer.isPlaying()) {
-                mediaPlayer.stop();
-            }
+            if (mediaPlayer.isPlaying()) mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer = null;
             currentIndex = -1;
@@ -131,16 +108,11 @@ public class MusicManager {
     public void toggleFavorite(Song song, FavoriteCallback callback) {
         String userId = FirebaseAuth.getInstance().getUid();
         if (userId == null) return;
-
         String rawId = song.getTitle() + song.getArtist();
         String docId = String.valueOf(rawId.hashCode());
-
         DocumentReference favRef = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(userId)
-                .collection("Favorites")
-                .document(docId);
-
+                .collection("users").document(userId)
+                .collection("Favorites").document(docId);
         favRef.get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 favRef.delete().addOnSuccessListener(aVoid -> callback.onResult(false));

@@ -34,7 +34,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle("זמן למוזיקה!")
-                .setContentText("בוא לשמוע את השירים שלך...")
+                .setContentText("בוא לשמוע קצת שירים")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 

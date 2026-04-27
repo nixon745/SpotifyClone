@@ -6,40 +6,89 @@
     android:layout_height="match_parent"
     android:background="#121212">
 
-    <TextView
-        android:id="@+id/favTitle"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCreatePlaylist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="השירים שאהבתי"
-        android:textColor="#FFFFFF"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_margin="20dp"
-        android:layoutDirection="rtl" />
-
-    <androidx.appcompat.widget.SearchView
-        android:id="@+id/searchViewFavorites"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/favTitle"
-        android:layout_marginHorizontal="20dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="25dp"
         android:layout_marginBottom="10dp"
-        android:background="@drawable/search_background"
-        app:queryHint="חפש במועדפים..."
-        app:iconifiedByDefault="false"
-        android:layoutDirection="rtl" />
+        android:text="צור פלייליסט חדש"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="#FFFFFF"
+        app:iconGravity="textStart"
+        android:background="@drawable/button_gradient_rounded"
+        app:backgroundTint="@null"
+        android:elevation="8dp"
+        android:paddingStart="25dp"
+        android:paddingEnd="25dp" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/favoritesRecyclerView"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/searchViewFavorites"
+        android:layout_below="@id/btnCreatePlaylist"
         android:layout_above="@id/miniPlayer"
-        android:clipToPadding="false"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="20dp"
-        tools:listitem="@layout/item_song" />
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/playlistsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:text="הפלייליסטים שלך"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/playlistsRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+            <TextView
+                android:id="@+id/favTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="10dp"
+                android:text="הספרייה שלי"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/searchViewFavorites"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginVertical="10dp"
+                android:background="@drawable/search_background"
+                app:queryHint="חפש במועדפים..."
+                app:iconifiedByDefault="false"
+                android:layoutDirection="rtl" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/favoritesRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="12dp"
+                tools:listitem="@layout/item_song" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <include
         android:id="@+id/miniPlayer"
@@ -56,7 +105,6 @@
         android:background="#000000"
         app:itemIconTint="@android:color/white"
         app:itemTextColor="@android:color/white"
-        app:menu="@menu/bottom_nav_menu"
-        app:labelVisibilityMode="labeled" />
+        app:menu="@menu/bottom_nav_menu" />
 
 </RelativeLayout>
