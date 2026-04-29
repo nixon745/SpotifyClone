@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
+    android:id="@+id/playerRootLayout"  android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212"
     android:padding="24dp">
@@ -22,8 +22,9 @@
         android:layout_centerHorizontal="true"
         android:layout_below="@id/btnBack"
         android:layout_marginTop="40dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="8dp">
+        app:cardElevation="25dp"
+        app:cardMaxElevation="30dp"
+        app:cardCornerRadius="12dp">
 
         <ImageView
             android:id="@+id/albumCover"
@@ -36,15 +37,24 @@
 
     <TextView
         android:id="@+id/albumTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_below="@id/albumCoverCard"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="32dp"
-        android:text="שם האלבום"
+        android:gravity="center"
+        android:text="שם השיר"
         android:textColor="#FFFFFF"
         android:textSize="24sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+
+        android:singleLine="true"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp" />
 
     <TextView
         android:id="@+id/albumArtist"
@@ -63,8 +73,8 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/albumArtist"
         android:layout_marginTop="32dp"
-        android:progressTint="#1DB954"
-        android:thumbTint="#FFFFFF" />
+        android:progressTint="#FFFFFF"  android:thumbTint="#FFFFFF"     android:splitTrack="false"      android:paddingStart="0dp"
+        android:paddingEnd="0dp" />
 
     <LinearLayout
         android:id="@+id/timeLayout"

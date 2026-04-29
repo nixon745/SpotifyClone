@@ -7,6 +7,9 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -214,29 +217,66 @@ public class FavoritesActivity extends AppCompatActivity {
     }
 
     public void updateMiniPlayerUI() {
-        try {
-            MusicManager mm = MusicManager.getInstance();
-            if (miniPlayer == null) return;
+        runOnUiThread(() -> { // תמיד כדאי לעטוף ב-runOnUiThread לעדכוני UI
+            try {
+                MusicManager mm = MusicManager.getInstance();
+                if (miniPlayer == null) return;
 
-            if (mm.mediaPlayer != null && mm.currentIndex != -1 && mm.currentList != null && !mm.currentList.isEmpty()) {
-                Song current = mm.currentList.get(mm.currentIndex);
-                if (miniTitle != null) miniTitle.setText(current.getTitle());
-                if (miniArtist != null) miniArtist.setText(current.getArtist());
-                if (miniImage != null) {
-                    Glide.with(this).load(current.getImageUrl()).placeholder(R.drawable.ic_launcher_background).into(miniImage);
+                if (mm.mediaPlayer != null && mm.currentIndex != -1 && mm.currentList != null && !mm.currentList.isEmpty()) {
+                    Song current = mm.currentList.get(mm.currentIndex);
+
+                    // 1. קישור ל-CardView
+                    androidx.cardview.widget.CardView miniCard = findViewById(R.id.miniPlayerCardView);
+
+                    // 2. עדכון טקסטים
+                    if (miniTitle != null) miniTitle.setText(current.getTitle());
+                    if (miniArtist != null) miniArtist.setText(current.getArtist());
+
+                    // 3. טיפול בתמונה וצבע (שימוש ב-asBitmap כדי שנוכל לחלץ צבע אם צריך)
+                    if (miniImage != null && current.getImageUrl() != null) {
+                        Glide.with(this)
+                                .asBitmap()
+                                .load(current.getImageUrl())
+                                .into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull android.graphics.Bitmap resource, @Nullable com.bumptech.glide.request.transition.Transition<? super android.graphics.Bitmap> transition) {
+                                        miniImage.setImageBitmap(resource);
+
+                                        // כאן אנחנו קודם כל מנסים למשוך מה-Manager
+                                        int savedColor = mm.getCurrentTrackColor();
+
+                                        if (miniCard != null) {
+                                            // אם יש צבע שמור (לא האפור ברירת המחדל), נשתמש בו
+                                            miniCard.setCardBackgroundColor(savedColor);
+
+                                            // ליתר ביטחון, אם עברנו שיר בתוך המועדפים, נחלץ צבע חדש
+                                            androidx.palette.graphics.Palette.from(resource).generate(palette -> {
+                                                if (palette != null) {
+                                                    int newColor = palette.getDarkVibrantColor(0xFF2A2A2A);
+                                                    mm.setCurrentTrackColor(newColor);
+                                                    miniCard.setCardBackgroundColor(newColor);
+                                                }
+                                            });
+                                        }
+                                    }
+                                    @Override public void onLoadCleared(@Nullable android.graphics.drawable.Drawable placeholder) {}
+                                });
+                    }
+
+                    if (miniPlayBtn != null) {
+                        miniPlayBtn.setImageResource(mm.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+                    }
+
+                    miniPlayer.setVisibility(View.VISIBLE);
+
+                } else {
+                    miniPlayer.setVisibility(View.GONE);
                 }
-                if (miniPlayBtn != null) {
-                    miniPlayBtn.setImageResource(mm.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
-                }
-                miniPlayer.setVisibility(View.VISIBLE);
-            } else {
-                miniPlayer.setVisibility(View.GONE);
+            } catch (Exception e) {
+                android.util.Log.e("MiniPlayerError", "Favorites update failed: " + e.getMessage());
             }
-        } catch (Exception e) {
-            android.util.Log.e("MiniPlayerError", "Error: " + e.getMessage());
-        }
+        });
     }
-
     private void showKeyboard(SearchView sView) {
         if (sView != null) {
             sView.setIconified(false);

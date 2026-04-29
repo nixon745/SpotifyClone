@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
@@ -19,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
@@ -362,38 +364,88 @@ public class HomeActivity extends AppCompatActivity {
 
     private void setupMiniPlayerListeners() {
         if (miniPlayer == null) return;
+
         miniPlayer.setOnClickListener(v -> startActivity(new Intent(this, PlayerActivity.class)));
+
         if (miniPlayBtn != null) {
             miniPlayBtn.setOnClickListener(v -> {
                 if (musicManager.mediaPlayer != null) {
                     if (musicManager.mediaPlayer.isPlaying()) musicManager.mediaPlayer.pause();
                     else musicManager.mediaPlayer.start();
-                    updateMiniPlayerUI();
+                    updateMiniPlayerUI(); // עדכון מיידי של האייקון
                 }
             });
         }
-        if (miniNextBtn != null) { miniNextBtn.setOnClickListener(v -> { musicManager.currentList = songList; musicManager.playNext(this); }); }
-        if (miniPrevBtn != null) { miniPrevBtn.setOnClickListener(v -> { musicManager.currentList = songList; musicManager.playPrevious(this); }); }
-    }
 
+        if (miniNextBtn != null) {
+            miniNextBtn.setOnClickListener(v -> {
+                // לפני העברת שיר, וודא שהנגן עובד על הרשימה הנכונה (חשוב במיוחד במצב GPS)
+                musicManager.currentList = songList;
+                musicManager.playNext(this);
+                // ה-Listener כבר יקרא ל-updateMiniPlayerUI אוטומטית
+            });
+        }
+
+        if (miniPrevBtn != null) {
+            miniPrevBtn.setOnClickListener(v -> {
+                musicManager.currentList = songList;
+                musicManager.playPrevious(this);
+            });
+        }
+    }
     public void updateMiniPlayerUI() {
         runOnUiThread(() -> {
             try {
                 MusicManager mm = MusicManager.getInstance();
-                if (miniPlayer == null) return;
+
                 if (mm.mediaPlayer != null && mm.currentIndex != -1 && mm.currentList != null && !mm.currentList.isEmpty()) {
                     Song current = mm.currentList.get(mm.currentIndex);
+
+                    androidx.cardview.widget.CardView miniCard = findViewById(R.id.miniPlayerCardView);
+                    View miniContainer = findViewById(R.id.miniPlayerContainer);
+
                     if (miniTitle != null) miniTitle.setText(current.getTitle());
                     if (miniArtist != null) miniArtist.setText(current.getArtist());
+
                     if (miniImage != null && current.getImageUrl() != null) {
-                        Glide.with(this).load(current.getImageUrl()).placeholder(R.drawable.ic_launcher_background).into(miniImage);
+                        Glide.with(this)
+                                .asBitmap()
+                                .load(current.getImageUrl())
+                                .into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull android.graphics.Bitmap resource, @Nullable com.bumptech.glide.request.transition.Transition<? super android.graphics.Bitmap> transition) {
+                                        // הצגת התמונה (היה חסר לך)
+                                        miniImage.setImageBitmap(resource);
+
+                                        // חילוץ ושמירת צבע
+                                        androidx.palette.graphics.Palette.from(resource).generate(palette -> {
+                                            if (palette != null && miniCard != null) {
+                                                int color = palette.getDarkVibrantColor(0xFF2A2A2A);
+
+                                                // שמירה ל-MusicManager כדי שהצבע "ירדוף" אחרינו למועדפים
+                                                MusicManager.getInstance().setCurrentTrackColor(color);
+
+                                                miniCard.setCardBackgroundColor(color);
+                                            }
+                                        });
+                                    }
+                                    @Override public void onLoadCleared(@Nullable android.graphics.drawable.Drawable placeholder) {}
+                                });
                     }
+
                     if (miniPlayBtn != null) {
                         miniPlayBtn.setImageResource(mm.mediaPlayer.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
                     }
-                    miniPlayer.setVisibility(View.VISIBLE);
-                } else { miniPlayer.setVisibility(View.GONE); }
-            } catch (Exception e) { android.util.Log.e("MiniPlayerError", "UI Update failed: " + e.getMessage()); }
+
+                    if (miniContainer != null) miniContainer.setVisibility(View.VISIBLE);
+
+                } else {
+                    View miniContainer = findViewById(R.id.miniPlayerContainer);
+                    if (miniContainer != null) miniContainer.setVisibility(View.GONE);
+                }
+            } catch (Exception e) {
+                android.util.Log.e("MiniPlayerError", "Update failed: " + e.getMessage());
+            }
         });
     }
 
@@ -430,7 +482,21 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        musicManager.setListener(() -> runOnUiThread(this::updateMiniPlayerUI));
+
+        if (musicManager != null) {
+            // אנחנו מגדירים את המאזין בצורה מפורשת
+            musicManager.setListener(new MusicManager.MusicUpdateListener() {
+                @Override
+                public void onSongChanged() {
+                    // אנחנו כופים על האפליקציה להריץ את העדכון על ה-Thread של המסך
+                    runOnUiThread(() -> {
+                        Log.d("MusicDebug", "HomeActivity received update!");
+                        updateMiniPlayerUI();
+                    });
+                }
+            });
+        }
+
         updateMiniPlayerUI();
         loadUserName();
     }

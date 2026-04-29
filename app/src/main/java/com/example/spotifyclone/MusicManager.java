@@ -21,7 +21,14 @@ public class MusicManager {
         void onSongChanged();
     }
     private MusicUpdateListener listener;
+    private int currentTrackColor = 0xFF2A2A2A;
+    public int getCurrentTrackColor() {
+        return currentTrackColor;
+    }
 
+    public void setCurrentTrackColor(int color) {
+        this.currentTrackColor = color;
+    }
     public void setListener(MusicUpdateListener listener) {
         this.listener = listener;
     }
@@ -42,15 +49,20 @@ public class MusicManager {
             currentIndex = 0;
         }
 
-        // שימוש ב-ApplicationContext כדי שהנגן לא יהיה קשור למסך שעלול להיסגר
-        playSong(context.getApplicationContext(), currentList.get(currentIndex));
+        // משתמשים ב-context הרגיל ולא ב-ApplicationContext כדי לשמור על קשר ל-UI
+        playSong(context, currentList.get(currentIndex));
     }
 
     public void playPrevious(Context context) {
-        if (currentList != null && currentIndex > 0) {
+        if (currentList == null || currentList.isEmpty()) return;
+
+        if (currentIndex > 0) {
             currentIndex--;
-            playSong(context.getApplicationContext(), currentList.get(currentIndex));
+        } else {
+            currentIndex = currentList.size() - 1;
         }
+        // תיקון: שלח context רגיל ולא ApplicationContext
+        playSong(context, currentList.get(currentIndex));
     }
 
     public void playSong(Context context, Song song) {
@@ -59,28 +71,26 @@ public class MusicManager {
                 mediaPlayer = new MediaPlayer();
             }
 
+            // --- הוספה קריטית: איפוס ליסנרים קודמים ---
+            mediaPlayer.setOnCompletionListener(null);
+            mediaPlayer.setOnPreparedListener(null);
+
             mediaPlayer.reset();
             mediaPlayer.setDataSource(song.getSongUrl());
-            mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build());
 
-            // מעבר אוטומטי בטוח
+            // הגדרת מאזין לסיום שיר (מעבר אוטומטי)
             mediaPlayer.setOnCompletionListener(mp -> {
-                new Handler(Looper.getMainLooper()).post(() -> playNext(context));
+                Log.d("MusicDebug", "Song finished, playing next");
+                playNext(context);
             });
 
+            // הגדרת מאזין לשיר שמוכן (עדכון UI)
             mediaPlayer.setOnPreparedListener(mp -> {
                 mp.start();
-                // עדכון UI בטוח דרך ה-Handler הראשי
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (listener != null) {
-                        try {
-                            listener.onSongChanged();
-                        } catch (Exception e) {
-                            Log.e("MusicManager", "Update failed: " + e.getMessage());
-                        }
+                        Log.d("MusicDebug", "UI Update triggered for: " + song.getTitle());
+                        listener.onSongChanged();
                     }
                 });
             });
@@ -88,7 +98,7 @@ public class MusicManager {
             mediaPlayer.prepareAsync();
 
         } catch (Exception e) {
-            Log.e("MusicManager", "Error playing song", e);
+            Log.e("MusicManager", "Error: " + e.getMessage());
         }
     }
 
