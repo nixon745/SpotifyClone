@@ -237,12 +237,12 @@ public class HomeActivity extends AppCompatActivity {
         songList.clear();
         songAdapter.notifyDataSetChanged();
 
-        String[] mainstreamArtists = {"Tayler, The Creator" , "Kanye West", "Taylor Swift", "Drake", "The Weeknd", "Omer Adam", "Travis Scott"};
+        String[] mainstreamArtists = {"Tyler, The Creator" , "Kanye West", "Frank Ocean", "Drake", "The Weeknd", "Travis Scott"};
         final int[] pendingRequests = {mainstreamArtists.length};
         final ArrayList<Song> tempData = new ArrayList<>();
 
         for (String artist : mainstreamArtists) {
-            RetrofitClient.getApiService().searchSongs(artist, 50, "song").enqueue(new Callback<ITunesResponse>() {
+            RetrofitClient.getApiService().searchSongs(artist, 90, "song").enqueue(new Callback<ITunesResponse>() {
                 @Override
                 public void onResponse(Call<ITunesResponse> call, Response<ITunesResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
@@ -275,7 +275,7 @@ public class HomeActivity extends AppCompatActivity {
                             s.setLat(32.6105);
                             s.setLon(35.1014);
                         }
-                        if (key.contains("omer adam")) {
+                        if (key.contains("Frank Ocean")) {
                             s.setLat(32.5000);
                             s.setLon(34.9000);
                         }
